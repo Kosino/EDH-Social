@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { parseDeck, parseEvent, parsePost } from "@/lib/create/validate";
+import { eventsPath, rsvpRedirectPath } from "@/lib/calendar";
+import { pragueDateKey } from "@/lib/utils";
 import { safeNext } from "@/lib/redirect";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -99,15 +101,27 @@ export async function createEvent(_prev: FormState, formData: FormData): Promise
     return { error: dbError(error.message) };
   }
 
-  redirect("/events");
+  const day = pragueDateKey(parsed.value.startsAt);
+  redirect(eventsPath({ month: day.slice(0, 7), day }));
+}
+
+function eventsReturn(formData: FormData, error?: string) {
+  const month = formData.get("month");
+  const day = formData.get("day");
+  return rsvpRedirectPath(
+    typeof month === "string" ? month : undefined,
+    typeof day === "string" ? day : undefined,
+    error
+  );
 }
 
 export async function toggleRsvp(formData: FormData) {
+  const back = eventsReturn(formData);
   const user = await getCurrentUser();
-  if (!user) redirect("/login?next=/events");
+  if (!user) redirect(`/login?next=${encodeURIComponent(back)}`);
 
   const eventId = String(formData.get("eventId") ?? "");
-  if (!UUID.test(eventId)) redirect("/events");
+  if (!UUID.test(eventId)) redirect(back);
 
   const supabase = await createClient();
   const { data: existing, error: lookupError } = await supabase
@@ -119,16 +133,16 @@ export async function toggleRsvp(formData: FormData) {
 
   if (lookupError) {
     console.error("toggleRsvp lookup", lookupError.code, lookupError.message);
-    redirect("/events?error=" + encodeURIComponent("Přihlášení k eventu se nepovedlo."));
+    redirect(eventsReturn(formData, "Přihlášení k eventu se nepovedlo."));
   }
 
   if (existing) {
     const { error } = await supabase.from("event_rsvps").delete().eq("event_id", eventId).eq("user_id", user.id);
-    if (error) redirect("/events?error=" + encodeURIComponent("Odhlášení z eventu se nepovedlo."));
+    if (error) redirect(eventsReturn(formData, "Odhlášení z eventu se nepovedlo."));
   } else {
     const { error } = await supabase.from("event_rsvps").insert({ event_id: eventId, user_id: user.id });
-    if (error) redirect("/events?error=" + encodeURIComponent("Přihlášení k eventu se nepovedlo."));
+    if (error) redirect(eventsReturn(formData, "Přihlášení k eventu se nepovedlo."));
   }
 
-  redirect("/events");
+  redirect(back);
 }

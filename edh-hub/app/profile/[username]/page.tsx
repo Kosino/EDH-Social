@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
+import BioForm from "@/components/profile/BioForm";
 import { isSuperuser } from "@/lib/admin";
 import { getProfile, type ProfileDeck } from "@/lib/supabase/queries";
 import { getSupabaseEnv } from "@/lib/supabase/env";
@@ -61,9 +62,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               )}
             </h1>
             <p className="mt-1 text-foreground/70">@{profile.username}</p>
-            <p className="mt-3 max-w-xl text-sm text-foreground/60">
+            <p className="mt-3 max-w-xl whitespace-pre-wrap text-sm text-foreground/60">
               {profile.bio || "Zatím bez popisu."}
             </p>
+            {isOwner && <BioForm bio={profile.bio} />}
           </div>
         </div>
       </div>

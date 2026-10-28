@@ -5,7 +5,7 @@ Prototyp sociální sítě pro hráče Magic: The Gathering (EDH / cEDH).
 ## Co je hotové
 - Next.js (App Router) + TypeScript + Tailwind
 - Tmavý layout s postranním panelem (podle návrhu)
-- Základní stránky: Feed, Profil, Kalendář eventů
+- Základní stránky: Feed, Profil, kalendář eventů po měsících (čas v Praze)
 - Supabase klient (`@supabase/ssr`), přihlášení, registrace a odhlášení
 - Formuláře pro příspěvek, deck a event (vyžadují přihlášení)
 - SQL migrace pro `profiles`, `posts`, `decks`, `events`, `event_rsvps`
@@ -21,11 +21,6 @@ Prototyp sociální sítě pro hráče Magic: The Gathering (EDH / cEDH).
    npm run dev
    ```
 4. Otevři [http://localhost:3000](http://localhost:3000)
-
-## Další kroky (s Grokem v Cursoru)
-
-1. Dokončit napojení Supabase: v SQL editoru spustit migraci (klíč už je v `.env.local`)
-2. Přidat reálný kalendář (např. react-big-calendar)
 
 ## Admin
 
