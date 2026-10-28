@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
+import UserAvatar from "@/components/profile/UserAvatar";
 import { deletePost } from "@/app/create/actions";
 import { feedTopicChip } from "@/lib/brand";
 import { getPost } from "@/lib/supabase/queries";
@@ -15,7 +16,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="mx-auto max-w-3xl">
         <DataNotice message={result.message} />
-        <Link href="/" className="text-sm text-primary hover:underline">
+        <Link href="/feed" className="text-sm text-primary hover:underline">
           Zpět na feed
         </Link>
       </div>
@@ -32,25 +33,25 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const user = await getCurrentUser();
   const isOwner = Boolean(user && user.id === post.authorId);
   const topic = feedTopicChip({ title: post.title, deckName: post.deckName });
-  const initial = post.author.slice(0, 1).toUpperCase();
+  const avatar = (
+    <UserAvatar
+      displayName={post.author}
+      avatarKey={post.authorAvatarKey}
+      avatarUrl={post.authorAvatarUrl}
+      size={44}
+    />
+  );
 
   return (
     <article className="mx-auto max-w-3xl">
-      <Link href="/" className="text-sm text-primary hover:underline">
+      <Link href="/feed" className="text-sm text-primary hover:underline">
         ← Feed
       </Link>
       <div className="mb-6 mt-6 flex items-center gap-3">
         {post.authorUsername !== "hráč" ? (
-          <Link
-            href={`/profile/${post.authorUsername}`}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30"
-          >
-            {initial}
-          </Link>
+          <Link href={`/profile/${post.authorUsername}`}>{avatar}</Link>
         ) : (
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
-            {initial}
-          </div>
+          avatar
         )}
         <div>
           {post.authorUsername !== "hráč" ? (

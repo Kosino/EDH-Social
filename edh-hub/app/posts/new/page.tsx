@@ -9,7 +9,7 @@ export default async function NewPostPage() {
 
   return (
     <div className="mx-auto max-w-xl">
-      <Link href="/" className="text-sm text-primary hover:underline">
+      <Link href="/feed" className="text-sm text-primary hover:underline">
         ← Feed
       </Link>
       <h1 className="mt-4 text-3xl font-bold">Nový příspěvek</h1>

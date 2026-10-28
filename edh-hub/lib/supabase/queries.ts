@@ -19,6 +19,8 @@ export type FeedPost = {
   authorId: string;
   author: string;
   authorUsername: string;
+  authorAvatarKey: string | null;
+  authorAvatarUrl: string | null;
   createdAt: string;
 };
 
@@ -28,6 +30,8 @@ export type ProfileDeck = {
   format: string;
   commander: string;
   moxfieldUrl: string | null;
+  /** Scryfall art_crop for tile backgrounds (filled on profile page). */
+  commanderImageUrl?: string | null;
 };
 
 export type DeckView = ProfileDeck & {
@@ -41,7 +45,11 @@ export type ProfileView = {
   id: string;
   username: string;
   displayName: string;
+  rawDisplayName: string | null;
   bio: string | null;
+  avatarKey: string | null;
+  avatarUrl: string | null;
+  moxfieldUserUrl: string | null;
   decks: ProfileDeck[];
 };
 
@@ -106,6 +114,19 @@ function usernameFrom(author: { username: string } | { username: string }[] | nu
   return author.username;
 }
 
+type AuthorRef =
+  | {
+      username: string;
+      avatar_key?: string | null;
+      avatar_url?: string | null;
+    }
+  | {
+      username: string;
+      avatar_key?: string | null;
+      avatar_url?: string | null;
+    }[]
+  | null;
+
 type PostRow = {
   id: string;
   title: string;
@@ -115,11 +136,20 @@ type PostRow = {
   kind?: string | null;
   created_at: string;
   author_id: string;
-  author: { username: string } | { username: string }[] | null;
+  author: AuthorRef;
 };
 
+function authorProfile(author: AuthorRef) {
+  const row = Array.isArray(author) ? author[0] : author;
+  return {
+    username: row?.username ?? "hráč",
+    avatarKey: row?.avatar_key ?? null,
+    avatarUrl: row?.avatar_url ?? null,
+  };
+}
+
 function mapPost(row: PostRow): FeedPost {
-  const username = usernameFrom(row.author);
+  const author = authorProfile(row.author);
   const kind: PostKind = row.kind === "article" ? "article" : "post";
   return {
     id: row.id,
@@ -129,31 +159,49 @@ function mapPost(row: PostRow): FeedPost {
     deckName: row.deck_name,
     kind,
     authorId: row.author_id,
-    author: publicName(username),
-    authorUsername: username,
+    author: publicName(author.username),
+    authorUsername: author.username,
+    authorAvatarKey: author.avatarKey,
+    authorAvatarUrl: author.avatarUrl,
     createdAt: row.created_at,
   };
 }
 
-const POST_SELECT =
+const POST_SELECT_FULL =
+  "id, title, excerpt, body, deck_name, kind, created_at, author_id, author:profiles!posts_author_id_fkey(username, avatar_key, avatar_url)";
+const POST_SELECT_BASE =
   "id, title, excerpt, body, deck_name, kind, created_at, author_id, author:profiles!posts_author_id_fkey(username)";
+
+async function selectPosts(
+  build: (select: string) => PromiseLike<{ data: unknown; error: PostgrestError | null }>
+): Promise<QueryResult<PostRow[]>> {
+  const full = await build(POST_SELECT_FULL);
+  if (!full.error) return { status: "ok", data: (full.data ?? []) as PostRow[] };
+  if (!(full.error.code === "42703" || full.error.message?.toLowerCase().includes("avatar"))) {
+    return failure(full.error);
+  }
+  const base = await build(POST_SELECT_BASE);
+  if (base.error) return failure(base.error);
+  return { status: "ok", data: (base.data ?? []) as PostRow[] };
+}
 
 async function listPostsByKind(kind: PostKind): Promise<QueryResult<FeedPost[]>> {
   if (!getSupabaseEnv()) return { status: "unconfigured" };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .eq("kind", kind)
-    .order("created_at", { ascending: false })
-    .limit(20);
-
-  if (error) return failure(error);
+  const result = await selectPosts((select) =>
+    supabase
+      .from("posts")
+      .select(select)
+      .eq("kind", kind)
+      .order("created_at", { ascending: false })
+      .limit(20)
+  );
+  if (result.status !== "ok") return result;
 
   return {
     status: "ok",
-    data: ((data ?? []) as PostRow[]).map(mapPost),
+    data: result.data.map(mapPost),
   };
 }
 
@@ -212,16 +260,17 @@ export async function searchPosts(
 
   const pattern = `"%${q}%"`;
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("posts")
-    .select(POST_SELECT)
-    .eq("kind", kind)
-    .or(`title.ilike.${pattern},excerpt.ilike.${pattern},body.ilike.${pattern},deck_name.ilike.${pattern}`)
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  if (error) return failure(error);
-  return { status: "ok", data: ((data ?? []) as PostRow[]).map(mapPost) };
+  const result = await selectPosts((select) =>
+    supabase
+      .from("posts")
+      .select(select)
+      .eq("kind", kind)
+      .or(`title.ilike.${pattern},excerpt.ilike.${pattern},body.ilike.${pattern},deck_name.ilike.${pattern}`)
+      .order("created_at", { ascending: false })
+      .limit(30)
+  );
+  if (result.status !== "ok") return result;
+  return { status: "ok", data: result.data.map(mapPost) };
 }
 
 export async function searchEvents(query: string): Promise<QueryResult<HubEvent[]>> {
@@ -258,23 +307,39 @@ export async function getPost(id: string): Promise<QueryResult<FeedPost | null>>
   if (!getSupabaseEnv()) return { status: "unconfigured" };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("posts").select(POST_SELECT).eq("id", id).maybeSingle();
-
-  if (error) return failure(error);
-  if (!data) return { status: "ok", data: null };
-
-  return { status: "ok", data: mapPost(data as PostRow) };
+  const result = await selectPosts((select) =>
+    supabase.from("posts").select(select).eq("id", id).maybeSingle()
+  );
+  if (result.status !== "ok") return result;
+  const row = Array.isArray(result.data) ? result.data[0] : (result.data as unknown as PostRow | null);
+  if (!row) return { status: "ok", data: null };
+  return { status: "ok", data: mapPost(row) };
 }
 
 export async function getProfile(username: string): Promise<QueryResult<ProfileView | null>> {
   if (!getSupabaseEnv()) return { status: "unconfigured" };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const fullSelect =
+    "id, username, display_name, bio, avatar_key, avatar_url, moxfield_user_url, decks(id, name, format, commander, moxfield_url, created_at)";
+  const baseSelect =
+    "id, username, display_name, bio, decks(id, name, format, commander, moxfield_url, created_at)";
+
+  let { data, error } = await supabase
     .from("profiles")
-    .select("id, username, display_name, bio, decks(id, name, format, commander, moxfield_url, created_at)")
+    .select(fullSelect)
     .eq("username", username.toLowerCase())
     .maybeSingle();
+
+  if (error && (error.code === "42703" || error.message?.toLowerCase().includes("avatar"))) {
+    const fallback = await supabase
+      .from("profiles")
+      .select(baseSelect)
+      .eq("username", username.toLowerCase())
+      .maybeSingle();
+    data = fallback.data as typeof data;
+    error = fallback.error;
+  }
 
   if (error) return failure(error);
   if (!data) return { status: "ok", data: null };
@@ -284,6 +349,9 @@ export async function getProfile(username: string): Promise<QueryResult<ProfileV
     username: string;
     display_name: string | null;
     bio: string | null;
+    avatar_key?: string | null;
+    avatar_url?: string | null;
+    moxfield_user_url?: string | null;
     decks:
       | Array<{
           id: string;
@@ -304,7 +372,11 @@ export async function getProfile(username: string): Promise<QueryResult<ProfileV
       id: row.id,
       username: row.username,
       displayName: publicName(row.username, row.display_name),
+      rawDisplayName: row.display_name,
       bio: row.bio,
+      avatarKey: row.avatar_key ?? null,
+      avatarUrl: row.avatar_url ?? null,
+      moxfieldUserUrl: row.moxfield_user_url ?? null,
       decks: decks.map((deck) => ({
         id: deck.id,
         name: deck.name,

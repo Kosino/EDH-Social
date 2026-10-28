@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import { ProfilePreview } from "@/components/profile/ProfilePreview";
 import { isSuperuser } from "@/lib/admin";
+import { getMoxfieldCommanderPreviews } from "@/lib/moxfield";
+import { getScryfallImagesByName } from "@/lib/scryfall";
 import { getProfile, getRsvpCount } from "@/lib/supabase/queries";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -17,10 +19,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         <ProfilePreview
           displayName={username}
           username={username.toLowerCase()}
+          rawDisplayName={username}
           bio="Procházím multivesmír deck po decku. Stavím tematické EDH listy s vysokou synergií."
+          avatarKey="forest-elf"
+          avatarUrl={null}
+          moxfieldUserUrl={null}
           isOwner={false}
           admin={false}
           commanders={["Atraxa", "Yuriko", "Kinnan"]}
+          moxfieldCommanders={[]}
           decks={[
             { id: "1", name: "Atraxa Superfriends", format: "EDH", commander: "Atraxa", moxfieldUrl: null },
             { id: "2", name: "Yuriko Ninjas", format: "cEDH", commander: "Yuriko", moxfieldUrl: null },
@@ -34,7 +41,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   if (rawUsername === "me") {
     const user = await getCurrentUser();
-    // Guests must not be sent to /login from Profile — only via „Přihlásit se“.
     if (!user) redirect("/");
     if (!user.username) {
       return (
@@ -64,17 +70,39 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const viewer = await getCurrentUser();
   const isOwner = viewer?.username === profile.username;
   const commanders = Array.from(new Set(profile.decks.map((deck) => deck.commander)));
-  const eventsJoined = await getRsvpCount(profile.id);
+  const [eventsJoined, moxfieldCommanders, commanderArt] = await Promise.all([
+    getRsvpCount(profile.id),
+    profile.moxfieldUserUrl
+      ? getMoxfieldCommanderPreviews({
+          moxfieldUserUrl: profile.moxfieldUserUrl,
+          localCommanders: commanders,
+        })
+      : Promise.resolve([]),
+    getScryfallImagesByName(
+      profile.decks.map((deck) => deck.commander),
+      "art_crop"
+    ),
+  ]);
+
+  const decks = profile.decks.map((deck) => ({
+    ...deck,
+    commanderImageUrl: commanderArt.get(deck.commander.trim()) ?? null,
+  }));
 
   return (
     <ProfilePreview
       displayName={profile.displayName}
       username={profile.username}
+      rawDisplayName={profile.rawDisplayName}
       bio={profile.bio}
+      avatarKey={profile.avatarKey}
+      avatarUrl={profile.avatarUrl}
+      moxfieldUserUrl={profile.moxfieldUserUrl}
       isOwner={isOwner}
       admin={isSuperuser(profile.username)}
       commanders={commanders}
-      decks={profile.decks}
+      moxfieldCommanders={moxfieldCommanders}
+      decks={decks}
       eventsJoined={eventsJoined}
     />
   );

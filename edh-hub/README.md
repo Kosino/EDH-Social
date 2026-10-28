@@ -43,6 +43,8 @@ V Supabase SQL editoru spusť migrace v pořadí:
 
 Nebo jedním pastem: `supabase/migrations/20261028160000_part2_bundle.sql` (kroky 2–4).
 
+5. `supabase/migrations/20261028170000_profile_avatars.sql` (avatar_key / avatar_url / moxfield_user_url + Storage bucket `avatars`)
+
 ## Supabase Auth URL Configuration
 
 **Lokálně**

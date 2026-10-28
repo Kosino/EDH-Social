@@ -1,191 +1,208 @@
 import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
-import SearchBar from "@/components/SearchBar";
-import { feedTopicChip } from "@/lib/brand";
+import EventKindIcon from "@/components/events/EventKindIcon";
+import { BRAND_NAME } from "@/lib/brand";
+import { eventTypeStyle } from "@/lib/brand";
 import {
-  filterPostsByQuery,
-  getFeedPosts,
-  normalizeSearchQuery,
-  searchPosts,
+  getArticles,
+  getUpcomingEvents,
   type FeedPost,
+  type HubEvent,
 } from "@/lib/supabase/queries";
-import { cn, formatRelativePrague } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/supabase/session";
+import { cn, formatEventDate, formatRelativePrague } from "@/lib/utils";
 
-const samples: FeedPost[] = [
-  {
-    id: "sample-kinnan",
-    title: "cEDH Primer: Proč je Kinnan stále silný",
-    excerpt: "Rozbor combů, mulligan strategie a proč je deck konzistentní i v roce 2026.",
-    body: null,
-    deckName: "Kinnan, Bonder Prodigy",
-    kind: "post",
-    authorId: "sample-author-1",
-    author: "AetherMaster",
-    authorUsername: "aethermaster",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "sample-henzie",
-    title: "Deck Tech: Henzie „Toolbox“",
-    excerpt: "ETB abuse, recursion a top-end bombs. Curve, synergie a budget swapy.",
-    body: null,
-    deckName: "Henzie",
-    kind: "post",
-    authorId: "sample-author-2",
-    author: "Elf_Brewer",
-    authorUsername: "elf_brewer",
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "sample-rules",
-    title: "Rule zero bez dramatu",
-    excerpt: "Jak si domluvit power level a tempo stolu, než se zamíchá.",
-    body: null,
-    deckName: null,
-    kind: "post",
-    authorId: "sample-author-3",
-    author: "Kosino",
-    authorUsername: "kosino",
-    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-  },
-];
+export default async function HomeDashboard() {
+  const [articlesResult, eventsResult, user] = await Promise.all([
+    getArticles(),
+    getUpcomingEvents(),
+    getCurrentUser(),
+  ]);
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string | string[] }>;
-}) {
-  const rawQ = (await searchParams).q;
-  const q = normalizeSearchQuery(Array.isArray(rawQ) ? rawQ[0] : rawQ);
-  const result = q ? await searchPosts("post", q) : await getFeedPosts();
-  const live = result.status === "ok";
-  const posts = live ? result.data : filterPostsByQuery(samples, q);
+  const articles =
+    articlesResult.status === "ok" ? articlesResult.data.slice(0, 5) : [];
+  const events =
+    eventsResult.status === "ok" ? eventsResult.data.slice(0, 6) : [];
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Feed</h1>
-          <p className="mt-1 text-sm text-foreground/55">Nejnovější příspěvky z Commander komunity</p>
+    <div className="mx-auto max-w-6xl">
+      <header className="mb-10 max-w-2xl">
+        <p className="text-sm font-medium text-primary">{BRAND_NAME}</p>
+        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight sm:text-5xl">
+          Komunita Commander hráčů
+        </h1>
+        <p className="mt-3 text-base leading-relaxed text-foreground/60">
+          Články, eventy a stoly na jednom místě — od casual podů po cEDH.
+        </p>
+      </header>
+
+      {(articlesResult.status === "error" || eventsResult.status === "error") && (
+        <div className="mb-6 space-y-2">
+          {articlesResult.status === "error" ? (
+            <DataNotice message={articlesResult.message} />
+          ) : null}
+          {eventsResult.status === "error" ? (
+            <DataNotice message={eventsResult.message} />
+          ) : null}
         </div>
-        <Link
-          href="/posts/new"
-          className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-[0_0_20px_-8px] shadow-primary hover:bg-primary/90"
-        >
-          + Nový příspěvek
-        </Link>
-      </div>
-
-      <div className="mb-6">
-        <SearchBar action="/" defaultValue={q} placeholder="Hledat příspěvky…" />
-        {q ? (
-          <p className="mt-2 text-xs text-foreground/50">
-            Výsledky pro „{q}“ ·{" "}
-            <Link href="/" className="text-primary hover:underline">
-              Zrušit
-            </Link>
-          </p>
-        ) : null}
-      </div>
-
-      {result.status === "error" && <DataNotice message={result.message} />}
-      {result.status === "unconfigured" && (
-        <DataNotice message="Supabase ještě není nastavené. Níže je jen náhled feedu." />
       )}
-      {!live && result.status === "error" ? (
-        <p className="mb-4 text-sm text-foreground/50">Zatím ukazujeme ukázkové příspěvky.</p>
-      ) : null}
 
-      {posts.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-white/15 bg-card/60 p-8 text-center text-sm text-foreground/70">
-          {q ? (
-            <>Pro „{q}“ nic nenašli.</>
-          ) : (
-            <>
-              Zatím tu nic není.{" "}
-              <Link href="/posts/new" className="text-primary hover:underline">
-                Napiš první příspěvek
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-12">
+        <section aria-labelledby="dash-articles">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <h2 id="dash-articles" className="font-display text-2xl font-semibold">
+              Články
+            </h2>
+            <Link href="/articles" className="text-sm text-primary hover:underline">
+              Všechny
+            </Link>
+          </div>
+          {articles.length === 0 ? (
+            <p className="border-t border-white/10 pt-4 text-sm text-foreground/55">
+              Zatím žádné články.{" "}
+              <Link href="/articles" className="text-primary hover:underline">
+                Podívej se na přehled
               </Link>
               .
+            </p>
+          ) : (
+            <ul className="divide-y divide-white/10 border-t border-white/10">
+              {articles.map((article) => (
+                <ArticleRow key={article.id} article={article} />
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section aria-labelledby="dash-events">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <h2 id="dash-events" className="font-display text-2xl font-semibold">
+              Eventy
+            </h2>
+            <Link href="/events" className="text-sm text-primary hover:underline">
+              Kalendář
+            </Link>
+          </div>
+          {events.length === 0 ? (
+            <p className="border-t border-white/10 pt-4 text-sm text-foreground/55">
+              Žádné nadcházející eventy.{" "}
+              <Link href="/events" className="text-primary hover:underline">
+                Otevři kalendář
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="divide-y divide-white/10 border-t border-white/10">
+              {events.map((event) => (
+                <EventRow key={event.id} event={event} />
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <section
+        aria-labelledby="dash-community"
+        className="mt-14 border-t border-white/10 pt-10"
+      >
+        <h2 id="dash-community" className="font-display text-2xl font-semibold">
+          O komunitě
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-foreground/65">
+          {BRAND_NAME} spojuje hráče EDH a cEDH v Česku: sdílíme decky, tipy a termíny stolů.
+          Veřejně si prohlédneš články a kalendář. Po přihlášení odemkneš zbytek.
+        </p>
+
+        <ul className="mt-6 grid gap-3 text-sm text-foreground/75 sm:grid-cols-2">
+          <li className="border-l-2 border-primary/50 pl-3">
+            <span className="font-medium text-foreground">Feed</span> — příspěvky a diskuze z komunity
+          </li>
+          <li className="border-l-2 border-accent/50 pl-3">
+            <span className="font-medium text-foreground">Profil</span> — avatar, bio, Moxfield odkaz
+          </li>
+          <li className="border-l-2 border-primary/50 pl-3">
+            <span className="font-medium text-foreground">Eventy</span> — vytvoř termín a RSVP ke stolům
+          </li>
+          <li className="border-l-2 border-accent/50 pl-3">
+            <span className="font-medium text-foreground">Decky</span> — seznam decků na tvém profilu
+          </li>
+        </ul>
+
+        <div className="mt-8 flex flex-wrap gap-3">
+          {user ? (
+            <>
+              <Link
+                href="/feed"
+                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary/90"
+              >
+                Otevřít Feed
+              </Link>
+              {user.username ? (
+                <Link
+                  href={`/profile/${user.username}`}
+                  className="rounded-lg border border-white/15 px-5 py-2.5 text-sm text-foreground/85 hover:bg-white/5"
+                >
+                  Můj profil
+                </Link>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <Link
+                href="/signup"
+                className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary/90"
+              >
+                Registrace
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-lg border border-white/15 px-5 py-2.5 text-sm text-foreground/85 hover:bg-white/5"
+              >
+                Přihlásit se
+              </Link>
             </>
           )}
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <PostCard key={post.id} post={post} live={live} />
-          ))}
         </div>
-      )}
+      </section>
     </div>
   );
 }
 
-function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
-  const initial = post.author.slice(0, 1).toUpperCase();
-  const topic = feedTopicChip({ title: post.title, deckName: post.deckName });
-  const profileHref =
-    live && post.authorUsername !== "hráč" ? `/profile/${post.authorUsername}` : null;
-  const postHref = live ? `/posts/${post.id}` : null;
-
+function ArticleRow({ article }: { article: FeedPost }) {
   return (
-    <article className="animate-fade-rise rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/35">
-      <div className="mb-4 flex items-center gap-3">
-        {profileHref ? (
-          <Link
-            href={profileHref}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30"
-            aria-label={`Profil ${post.author}`}
-          >
-            {initial}
-          </Link>
-        ) : (
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
-            {initial}
+    <li>
+      <Link href={`/articles/${article.id}`} className="group block py-4">
+        <h3 className="font-display text-lg font-semibold leading-snug group-hover:text-primary">
+          {article.title}
+        </h3>
+        {article.excerpt ? (
+          <p className="mt-1 line-clamp-2 text-sm text-foreground/60">{article.excerpt}</p>
+        ) : null}
+        <p className="mt-2 text-xs text-foreground/40">
+          {article.author} · {formatRelativePrague(article.createdAt)}
+        </p>
+      </Link>
+    </li>
+  );
+}
+
+function EventRow({ event }: { event: HubEvent }) {
+  const style = eventTypeStyle(event.eventType);
+  return (
+    <li>
+      <Link href={`/events/${event.id}`} className="group flex items-start gap-3 py-4">
+        <EventKindIcon eventType={event.eventType} className="mt-0.5 h-10 w-10 shrink-0 rounded-lg" />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-medium group-hover:text-primary">{event.title}</h3>
+            <span className={cn("rounded px-1.5 py-0.5 text-[10px]", style.chip)}>{style.label}</span>
           </div>
-        )}
-        <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          {profileHref ? (
-            <Link href={profileHref} className="truncate font-medium text-foreground hover:text-primary">
-              {post.author}
-            </Link>
-          ) : (
-            <span className="truncate font-medium text-foreground">{post.author}</span>
-          )}
-          <span className="shrink-0 text-xs text-foreground/40">{formatRelativePrague(post.createdAt)}</span>
+          <p className="mt-1 text-xs text-foreground/45">
+            {formatEventDate(event.startsAt)}
+            {event.location ? ` · ${event.location}` : ""}
+          </p>
         </div>
-      </div>
-
-      {postHref ? (
-        <Link href={postHref}>
-          <h2 className="font-display text-lg font-semibold leading-snug text-foreground hover:text-primary">
-            {post.title}
-          </h2>
-        </Link>
-      ) : (
-        <h2 className="font-display text-lg font-semibold leading-snug text-foreground">{post.title}</h2>
-      )}
-      {post.excerpt ? (
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-foreground/65">{post.excerpt}</p>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium", topic.className)}>
-            {topic.label}
-          </span>
-          {post.deckName ? (
-            <span className="truncate text-xs text-foreground/45">Deck: {post.deckName}</span>
-          ) : null}
-        </div>
-        {live ? (
-          <Link href={`/posts/${post.id}`} className="text-sm font-medium text-primary hover:underline">
-            Číst více
-          </Link>
-        ) : (
-          <span className="text-sm text-foreground/35">Náhled</span>
-        )}
-      </div>
-    </article>
+      </Link>
+    </li>
   );
 }
