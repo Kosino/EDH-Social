@@ -165,6 +165,95 @@ export async function getArticles(): Promise<QueryResult<FeedPost[]>> {
   return listPostsByKind("article");
 }
 
+/** Sanitize user query for PostgREST `ilike` filters. */
+export function normalizeSearchQuery(raw: string | null | undefined) {
+  if (!raw) return "";
+  return raw
+    .trim()
+    .slice(0, 80)
+    .replace(/[%_,.()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function matchesSearchHaystack(haystack: string, query: string) {
+  return haystack.toLowerCase().includes(query.toLowerCase());
+}
+
+export function filterPostsByQuery(posts: FeedPost[], query: string) {
+  const q = normalizeSearchQuery(query);
+  if (!q) return posts;
+  return posts.filter((post) =>
+    matchesSearchHaystack(
+      `${post.title} ${post.excerpt ?? ""} ${post.body ?? ""} ${post.deckName ?? ""} ${post.author}`,
+      q
+    )
+  );
+}
+
+export function filterEventsByQuery(events: HubEvent[], query: string) {
+  const q = normalizeSearchQuery(query);
+  if (!q) return events;
+  return events.filter((event) =>
+    matchesSearchHaystack(
+      `${event.title} ${event.location ?? ""} ${event.description ?? ""} ${event.eventType} ${event.hostUsername ?? ""}`,
+      q
+    )
+  );
+}
+
+export async function searchPosts(
+  kind: PostKind,
+  query: string
+): Promise<QueryResult<FeedPost[]>> {
+  const q = normalizeSearchQuery(query);
+  if (!q) return listPostsByKind(kind);
+  if (!getSupabaseEnv()) return { status: "unconfigured" };
+
+  const pattern = `"%${q}%"`;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select(POST_SELECT)
+    .eq("kind", kind)
+    .or(`title.ilike.${pattern},excerpt.ilike.${pattern},body.ilike.${pattern},deck_name.ilike.${pattern}`)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (error) return failure(error);
+  return { status: "ok", data: ((data ?? []) as PostRow[]).map(mapPost) };
+}
+
+export async function searchEvents(query: string): Promise<QueryResult<HubEvent[]>> {
+  const q = normalizeSearchQuery(query);
+  if (!q) return getUpcomingEvents();
+  if (!getSupabaseEnv()) return { status: "unconfigured" };
+
+  const pattern = `"%${q}%"`;
+  const supabase = await createClient();
+  const full = await supabase
+    .from("events")
+    .select(EVENT_SELECT_FULL)
+    .or(`title.ilike.${pattern},location.ilike.${pattern},description.ilike.${pattern}`)
+    .order("starts_at", { ascending: true })
+    .limit(30);
+
+  if (!full.error) {
+    return { status: "ok", data: mapEvents((full.data ?? []) as EventRow[]) };
+  }
+  if (!isMissingDescriptionColumn(full.error)) return failure(full.error);
+
+  const base = await supabase
+    .from("events")
+    .select(EVENT_SELECT_BASE)
+    .or(`title.ilike.${pattern},location.ilike.${pattern}`)
+    .order("starts_at", { ascending: true })
+    .limit(30);
+
+  if (base.error) return failure(base.error);
+  return { status: "ok", data: mapEvents((base.data ?? []) as EventRow[]) };
+}
+
 export async function getPost(id: string): Promise<QueryResult<FeedPost | null>> {
   if (!getSupabaseEnv()) return { status: "unconfigured" };
 

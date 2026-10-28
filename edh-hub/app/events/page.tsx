@@ -3,11 +3,21 @@ import { redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import EventKindIcon from "@/components/events/EventKindIcon";
 import MonthCalendar, { type DayMarker } from "@/components/events/MonthCalendar";
+import SearchBar from "@/components/SearchBar";
 import { toggleRsvp } from "@/app/create/actions";
 import { eventTypeStyle } from "@/lib/brand";
 import { eventsPath, formatDayLabel, pragueDateKey, pragueMonthRange, resolveCalendarQuery } from "@/lib/calendar";
 import { EVENT_KINDS } from "@/lib/events";
-import { getEventsInRange, getMyRsvpEventIds, getUpcomingEvents, type HubEvent, type QueryResult } from "@/lib/supabase/queries";
+import {
+  filterEventsByQuery,
+  getEventsInRange,
+  getMyRsvpEventIds,
+  getUpcomingEvents,
+  normalizeSearchQuery,
+  searchEvents,
+  type HubEvent,
+  type QueryResult,
+} from "@/lib/supabase/queries";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { cn, formatEventDate, pragueLocalToUtc } from "@/lib/utils";
 
@@ -131,40 +141,64 @@ function dateBlock(iso: string) {
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string | string[]; month?: string | string[]; day?: string | string[] }>;
+  searchParams: Promise<{
+    error?: string | string[];
+    month?: string | string[];
+    day?: string | string[];
+    q?: string | string[];
+  }>;
 }) {
   const params = await searchParams;
   const monthParam = textParam(params.month);
   const dayParam = textParam(params.day);
   const errorParam = textParam(params.error);
+  const q = normalizeSearchQuery(textParam(params.q));
   const view = resolveCalendarQuery(monthParam, dayParam);
 
   if ((monthParam && monthParam !== view.month.key) || (dayParam && dayParam !== view.day)) {
-    redirect(eventsPath({ month: view.month.key, day: view.day, error: errorParam }));
+    redirect(eventsPath({ month: view.month.key, day: view.day, error: errorParam, q }));
   }
 
   const range = pragueMonthRange(view.month);
-  const [upcomingResult, monthResult] = await Promise.all([
+  const [upcomingResult, monthResult, searchResult] = await Promise.all([
     getUpcomingEvents(),
     range
       ? getEventsInRange(range.start.toISOString(), range.end.toISOString())
       : Promise.resolve({ status: "error" as const, message: "Kalendář se nepodařilo sestavit." }),
+    q ? searchEvents(q) : Promise.resolve({ status: "ok" as const, data: [] as HubEvent[] }),
   ]);
 
   const samples = sampleEventsAround();
   const offline = upcomingResult.status !== "ok" && monthResult.status !== "ok";
   const sampleMonth = samples.filter((event) => pragueDateKey(event.startsAt).startsWith(view.month.key));
-  const monthEvents = monthResult.status === "ok" ? monthResult.data : offline ? sampleMonth : [];
+  const monthEventsRaw = monthResult.status === "ok" ? monthResult.data : offline ? sampleMonth : [];
+  const monthEvents = q ? filterEventsByQuery(monthEventsRaw, q) : monthEventsRaw;
   const dayPool = monthResult.status === "ok" ? monthResult.data : offline ? samples : [];
   const selectedEvents = view.day
     ? dayPool.filter((event) => pragueDateKey(event.startsAt) === view.day).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     : [];
   const upcomingEvents = upcomingResult.status === "ok" ? upcomingResult.data : offline ? samples : [];
-  const listed = view.day ? selectedEvents : upcomingEvents;
-  const listIsLive = view.day ? monthResult.status === "ok" : upcomingResult.status === "ok";
+  const searchHits =
+    searchResult.status === "ok"
+      ? searchResult.data
+      : offline
+        ? filterEventsByQuery(samples, q)
+        : [];
+  const listed = q
+    ? view.day
+      ? filterEventsByQuery(selectedEvents, q)
+      : searchHits
+    : view.day
+      ? selectedEvents
+      : upcomingEvents;
+  const listIsLive = q
+    ? searchResult.status === "ok" || (Boolean(view.day) && monthResult.status === "ok")
+    : view.day
+      ? monthResult.status === "ok"
+      : upcomingResult.status === "ok";
   const user = listIsLive ? await getCurrentUser() : null;
   const joined = new Set(user ? await getMyRsvpEventIds(user.id) : []);
-  const returnTo = eventsPath({ month: view.month.key, day: view.day });
+  const returnTo = eventsPath({ month: view.month.key, day: view.day, q });
   const markers: Record<string, DayMarker[]> = {};
   for (const event of monthEvents) {
     const key = pragueDateKey(event.startsAt);
@@ -177,9 +211,15 @@ export default async function EventsPage({
   }
   const monthHasEvents = monthEvents.length > 0;
 
+  const listTitle = q
+    ? `Hledání „${q}“`
+    : view.day
+      ? formatDayLabel(view.day)
+      : "Nadcházející";
+
   return (
     <div className="max-w-6xl">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold">Kalendář eventů</h1>
           <p className="mt-1 text-foreground/60">
@@ -192,6 +232,23 @@ export default async function EventsPage({
         >
           + Vytvořit event
         </Link>
+      </div>
+
+      <div className="mb-6">
+        <SearchBar
+          action="/events"
+          defaultValue={q}
+          placeholder="Hledat eventy…"
+          preserve={{ month: view.month.key, ...(view.day ? { day: view.day } : {}) }}
+        />
+        {q ? (
+          <p className="mt-2 text-xs text-foreground/50">
+            Filtr aktivní ·{" "}
+            <Link href={eventsPath({ month: view.month.key, day: view.day })} className="text-primary hover:underline">
+              Zrušit hledání
+            </Link>
+          </p>
+        ) : null}
       </div>
 
       <MonthCalendar
@@ -210,7 +267,7 @@ export default async function EventsPage({
         <p>Všechny časy jsou v Europe/Prague</p>
       </div>
 
-      {!monthHasEvents && listIsLive ? (
+      {!monthHasEvents && listIsLive && !q ? (
         <p className="mb-6 text-sm text-foreground/50">
           V tomto měsíci zatím nejsou žádné eventy.{" "}
           <Link href="/events/new" className="text-primary hover:underline">
@@ -220,7 +277,7 @@ export default async function EventsPage({
         </p>
       ) : null}
 
-      {noticesFor([upcomingResult, monthResult], errorParam).map((message) => (
+      {noticesFor([upcomingResult, monthResult, searchResult], errorParam).map((message) => (
         <DataNotice key={message} message={message} />
       ))}
       {offline && upcomingResult.status === "unconfigured" ? (
@@ -228,16 +285,23 @@ export default async function EventsPage({
       ) : null}
 
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="font-display text-xl font-semibold">{view.day ? formatDayLabel(view.day) : "Nadcházející"}</h2>
+        <h2 className="font-display text-xl font-semibold">{listTitle}</h2>
         {view.day ? (
-          <Link href={eventsPath({ month: view.month.key })} className="shrink-0 text-sm text-primary hover:underline">
+          <Link
+            href={eventsPath({ month: view.month.key, q })}
+            className="shrink-0 text-sm text-primary hover:underline"
+          >
             Zrušit výběr dne
           </Link>
         ) : null}
       </div>
 
       {listed.length === 0 ? (
-        view.day ? (
+        q ? (
+          <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/60">
+            Pro „{q}“ žádný event.
+          </p>
+        ) : view.day ? (
           <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/60">
             V tento den není žádný event.{" "}
             <Link href="/events/new" className="text-primary hover:underline">

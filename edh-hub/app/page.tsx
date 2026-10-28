@@ -1,7 +1,14 @@
 import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
+import SearchBar from "@/components/SearchBar";
 import { feedTopicChip } from "@/lib/brand";
-import { getFeedPosts, type FeedPost } from "@/lib/supabase/queries";
+import {
+  filterPostsByQuery,
+  getFeedPosts,
+  normalizeSearchQuery,
+  searchPosts,
+  type FeedPost,
+} from "@/lib/supabase/queries";
 import { cn, formatRelativePrague } from "@/lib/utils";
 
 const samples: FeedPost[] = [
@@ -43,14 +50,20 @@ const samples: FeedPost[] = [
   },
 ];
 
-export default async function Home() {
-  const result = await getFeedPosts();
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>;
+}) {
+  const rawQ = (await searchParams).q;
+  const q = normalizeSearchQuery(Array.isArray(rawQ) ? rawQ[0] : rawQ);
+  const result = q ? await searchPosts("post", q) : await getFeedPosts();
   const live = result.status === "ok";
-  const posts = live ? result.data : samples;
+  const posts = live ? result.data : filterPostsByQuery(samples, q);
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">Feed</h1>
           <p className="mt-1 text-sm text-foreground/55">Nejnovější příspěvky z Commander komunity</p>
@@ -63,6 +76,18 @@ export default async function Home() {
         </Link>
       </div>
 
+      <div className="mb-6">
+        <SearchBar action="/" defaultValue={q} placeholder="Hledat příspěvky…" />
+        {q ? (
+          <p className="mt-2 text-xs text-foreground/50">
+            Výsledky pro „{q}“ ·{" "}
+            <Link href="/" className="text-primary hover:underline">
+              Zrušit
+            </Link>
+          </p>
+        ) : null}
+      </div>
+
       {result.status === "error" && <DataNotice message={result.message} />}
       {result.status === "unconfigured" && (
         <DataNotice message="Supabase ještě není nastavené. Níže je jen náhled feedu." />
@@ -71,13 +96,19 @@ export default async function Home() {
         <p className="mb-4 text-sm text-foreground/50">Zatím ukazujeme ukázkové příspěvky.</p>
       ) : null}
 
-      {live && posts.length === 0 ? (
+      {posts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-white/15 bg-card/60 p-8 text-center text-sm text-foreground/70">
-          Zatím tu nic není.{" "}
-          <Link href="/posts/new" className="text-primary hover:underline">
-            Napiš první příspěvek
-          </Link>
-          .
+          {q ? (
+            <>Pro „{q}“ nic nenašli.</>
+          ) : (
+            <>
+              Zatím tu nic není.{" "}
+              <Link href="/posts/new" className="text-primary hover:underline">
+                Napiš první příspěvek
+              </Link>
+              .
+            </>
+          )}
         </p>
       ) : (
         <div className="space-y-4">
