@@ -5,6 +5,7 @@ import AddCardForm from "@/components/deckbuilder/AddCardForm";
 import DeckCardTile from "@/components/deckbuilder/DeckCardTile";
 import DeckStatsPanel from "@/components/deckbuilder/DeckStatsPanel";
 import ImportDecklistForm from "@/components/deckbuilder/ImportDecklistForm";
+import PartnerForm from "@/components/deckbuilder/PartnerForm";
 import RemoveCardButton from "@/components/deckbuilder/RemoveCardButton";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { evaluateDeckLegality } from "@/lib/deckbuilder/legality";
@@ -49,6 +50,7 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
       colorIdentity: c.colorIdentity,
       isBasicLand: c.isBasicLand,
       typeLine: c.typeLine,
+      oracleText: c.oracleText,
     })),
   });
   const illegal = new Map(report.cards.map((c) => [c.name.toLowerCase(), c]));
@@ -72,7 +74,8 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
       </Link>
       <h1 className="mt-4 font-display text-3xl font-bold">Editor: {deck.name}</h1>
       <p className="mt-1 text-sm text-foreground/55">
-        {deck.format} · {deck.commanderName} · {report.cardCount}/100 ·{" "}
+        {deck.format} · {deck.commanderName}
+        {deck.partnerName ? ` + ${deck.partnerName}` : ""} · {report.cardCount}/100 ·{" "}
         <span className={report.legal ? "text-casual" : "text-red-300"}>
           {report.legal ? "legální" : "nelegální"}
         </span>
@@ -81,6 +84,7 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
       <div className="mt-8 grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
         <div className="space-y-4">
           <AddCardForm deckId={deck.id} />
+          <PartnerForm deckId={deck.id} partnerName={deck.partnerName} />
           {importOn ? (
             <ImportDecklistForm deckId={deck.id} />
           ) : (

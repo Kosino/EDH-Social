@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { evaluateDeckLegality, identityContains } from "./legality";
+import { evaluateDeckLegality, hasPartnerAbility, identityContains } from "./legality";
 
 function land(name: string, n = 1) {
   return {
@@ -99,5 +99,65 @@ describe("evaluateDeckLegality", () => {
     });
     assert.equal(report.cardCount, 100);
     assert.ok(!report.issues.some((i) => i.code === "singleton"));
+  });
+
+  it("allows two partner commanders", () => {
+    const report = evaluateDeckLegality({
+      format: "EDH",
+      colorIdentity: ["W", "B"],
+      cards: [
+        {
+          name: "Tymna the Weaver",
+          quantity: 1,
+          board: "commander",
+          colorIdentity: ["W", "B"],
+          oracleText: "Partner\nAt the beginning of your postcombat main phase…",
+        },
+        {
+          name: "Thrasios, Triton Hero",
+          quantity: 1,
+          board: "commander",
+          colorIdentity: ["G", "U"],
+          oracleText: "{4}: Scry 1…\nPartner",
+        },
+        land("Plains", 98),
+      ],
+    });
+    assert.ok(!report.issues.some((i) => i.code === "partner_required"));
+    assert.ok(!report.issues.some((i) => i.code === "too_many_commanders"));
+  });
+
+  it("flags dual commanders without partner", () => {
+    const report = evaluateDeckLegality({
+      format: "EDH",
+      colorIdentity: ["G", "U"],
+      cards: [
+        {
+          name: "Kinnan, Bonder Prodigy",
+          quantity: 1,
+          board: "commander",
+          colorIdentity: ["G", "U"],
+          oracleText: "Whenever you tap a nonland permanent…",
+        },
+        {
+          name: "Selvala, Heart of the Wilds",
+          quantity: 1,
+          board: "commander",
+          colorIdentity: ["G"],
+          oracleText: "{G}: Add X mana…",
+        },
+        land("Forest", 98),
+      ],
+    });
+    assert.ok(report.issues.some((i) => i.code === "partner_required"));
+  });
+});
+
+describe("hasPartnerAbility", () => {
+  it("detects Partner and Friends forever", () => {
+    assert.equal(hasPartnerAbility("Partner"), true);
+    assert.equal(hasPartnerAbility("Partner with Malcolm, Keen-Eyed Navigator"), true);
+    assert.equal(hasPartnerAbility("Friends forever"), true);
+    assert.equal(hasPartnerAbility("Just a dragon."), false);
   });
 });

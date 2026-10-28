@@ -46,6 +46,7 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
       colorIdentity: c.colorIdentity,
       isBasicLand: c.isBasicLand,
       typeLine: c.typeLine,
+      oracleText: c.oracleText,
     })),
   });
   const illegal = new Map(report.cards.map((c) => [c.name.toLowerCase(), c]));
@@ -76,6 +77,7 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
         <h1 className="mt-1 font-display text-3xl font-bold">{deck.name}</h1>
         <p className="mt-2 text-sm text-foreground/60">
           {deck.format} · {deck.commanderName}
+          {deck.partnerName ? ` + ${deck.partnerName}` : ""}
           {deck.colorIdentity.length ? ` · ${deck.colorIdentity.join("")}` : ""}
           {" · "}
           {formatRelativePrague(deck.updatedAt)}

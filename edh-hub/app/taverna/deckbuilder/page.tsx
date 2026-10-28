@@ -84,7 +84,9 @@ export default async function DeckbuilderDashboardPage() {
                   <span className="min-w-0">
                     <span className="block font-medium">{deck.name}</span>
                     <span className="text-xs text-foreground/45">
-                      {deck.format} · {deck.commanderName} · {deck.cardCount} karet
+                      {deck.format} · {deck.commanderName}
+                      {deck.partnerName ? ` + ${deck.partnerName}` : ""} · {deck.cardCount}{" "}
+                      karet
                     </span>
                   </span>
                   <span className="shrink-0 text-xs text-foreground/40">

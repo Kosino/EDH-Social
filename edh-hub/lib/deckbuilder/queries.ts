@@ -34,6 +34,7 @@ export type DeckV2ListItem = {
   name: string;
   format: DeckFormat;
   commanderName: string;
+  partnerName: string | null;
   updatedAt: string;
   cardCount: number;
 };
@@ -44,7 +45,7 @@ export async function listMyDecksV2(ownerId: string): Promise<QueryResult<DeckV2
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("decks_v2")
-    .select("id, name, format, commander_name, updated_at, deck_cards(quantity)")
+    .select("id, name, format, commander_name, partner_name, updated_at, deck_cards(quantity)")
     .eq("owner_id", ownerId)
     .order("updated_at", { ascending: false });
 
@@ -67,6 +68,7 @@ export async function listMyDecksV2(ownerId: string): Promise<QueryResult<DeckV2
       name: row.name as string,
       format: row.format as DeckFormat,
       commanderName: row.commander_name as string,
+      partnerName: (row.partner_name as string | null) ?? null,
       updatedAt: row.updated_at as string,
       cardCount,
     };

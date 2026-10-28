@@ -8,11 +8,11 @@
 - Server Actions v `app/decks/actions.ts`: `createDeck`, `addCardToDeck`, `removeCardFromDeck`
 - UI: create + editor + illegal corner
 
-## Out of scope
+## Out of scope (shipped later)
 
-- Moxfield import (Modul 02)
-- Stats / mana curve (Modul 03)
-- Partner commander UI (schema ready, UI later)
+- Moxfield import (Modul 02) — done
+- Stats / mana curve (Modul 03) — done
+- Partner commander UI — `TavernaDeckForm` + `PartnerForm` + `setDeckPartner`
 
 ## Acceptance
 

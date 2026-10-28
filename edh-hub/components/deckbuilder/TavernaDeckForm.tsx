@@ -22,7 +22,18 @@ export default function TavernaDeckForm() {
         </select>
       </Field>
       <Field label="Commander" hint="Jméno karty — dohledáme na Scryfallu.">
-        <input name="commander" required maxLength={160} className={fieldClass} placeholder="např. Selvala, Heart of the Wilds" />
+        <input name="commander" required maxLength={160} className={fieldClass} placeholder="např. Tymna the Weaver" />
+      </Field>
+      <Field
+        label="Partner"
+        hint="Volitelné. Druhý commander (Partner / Partner with / Friends forever)."
+      >
+        <input
+          name="partner"
+          maxLength={160}
+          className={fieldClass}
+          placeholder="např. Thrasios, Triton Hero"
+        />
       </Field>
       <Field label="Popis" hint="Volitelné.">
         <textarea name="description" maxLength={1000} rows={3} className={fieldClass} />
