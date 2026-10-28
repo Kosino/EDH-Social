@@ -35,6 +35,22 @@ export function formatEventDate(iso: string) {
   }).format(new Date(iso));
 }
 
+/** Countdown copy for event detail (Europe/Prague wall clock). */
+export function formatEventCountdown(iso: string, now = Date.now()) {
+  const start = new Date(iso).getTime();
+  if (Number.isNaN(start)) return "";
+  const deltaMs = start - now;
+  if (deltaMs <= -60 * 60 * 1000) return "Už začalo";
+  if (deltaMs <= 0) return "Právě začíná";
+  const minutes = Math.round(deltaMs / 60_000);
+  if (minutes < 60) return `Začíná za ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Začíná za ${hours} h`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "Začíná zítra";
+  return `Začíná za ${days} dny`;
+}
+
 export function pragueDateKey(value: string | Date) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";

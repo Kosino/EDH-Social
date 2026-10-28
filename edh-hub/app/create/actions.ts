@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { parseDeck, parseEvent, parsePost } from "@/lib/create/validate";
-import { eventsPath, rsvpRedirectPath } from "@/lib/calendar";
-import { pragueDateKey } from "@/lib/utils";
+import { rsvpRedirectPath } from "@/lib/calendar";
 import { safeNext } from "@/lib/redirect";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -97,18 +96,24 @@ export async function createEvent(_prev: FormState, formData: FormData): Promise
   if (!parsed.ok) return { error: parsed.error };
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const baseRow = {
+    host_id: auth.user.id,
+    title: parsed.value.title,
+    event_type: parsed.value.eventType,
+    starts_at: parsed.value.startsAt,
+    location: parsed.value.location,
+  };
+  let insert = await supabase
     .from("events")
-    .insert({
-      host_id: auth.user.id,
-      title: parsed.value.title,
-      event_type: parsed.value.eventType,
-      starts_at: parsed.value.startsAt,
-      location: parsed.value.location,
-    })
+    .insert({ ...baseRow, description: parsed.value.description })
     .select("id")
     .single();
 
+  if (insert.error?.message?.toLowerCase().includes("description")) {
+    insert = await supabase.from("events").insert(baseRow).select("id").single();
+  }
+
+  const { data, error } = insert;
   if (error || !data?.id) {
     console.error("createEvent", error?.code, error?.message);
     return { error: dbError(error?.message ?? "") };
@@ -121,11 +126,16 @@ export async function createEvent(_prev: FormState, formData: FormData): Promise
     console.error("createEvent host RSVP", rsvpError.code, rsvpError.message);
   }
 
-  const day = pragueDateKey(parsed.value.startsAt);
-  redirect(eventsPath({ month: day.slice(0, 7), day }));
+  redirect(`/events/${data.id}`);
 }
 
 function eventsReturn(formData: FormData, error?: string) {
+  const returnTo = formData.get("returnTo");
+  if (typeof returnTo === "string" && returnTo.startsWith("/events")) {
+    const url = new URL(returnTo, "http://local");
+    if (error) url.searchParams.set("error", error);
+    return `${url.pathname}${url.search}`;
+  }
   const month = formData.get("month");
   const day = formData.get("day");
   return rsvpRedirectPath(

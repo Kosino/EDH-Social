@@ -90,19 +90,29 @@ export default async function Home() {
 function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
   const initial = post.author.slice(0, 1).toUpperCase();
   const topic = feedTopicChip({ title: post.title, deckName: post.deckName });
+  const profileHref =
+    live && post.authorUsername !== "hráč" ? `/profile/${post.authorUsername}` : null;
+  const postHref = live ? `/posts/${post.id}` : null;
 
   return (
     <article className="animate-fade-rise rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/35">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
-          {initial}
-        </div>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30"
+            aria-label={`Profil ${post.author}`}
+          >
+            {initial}
+          </Link>
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
+            {initial}
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          {live && post.authorUsername !== "hráč" ? (
-            <Link
-              href={`/profile/${post.authorUsername}`}
-              className="truncate font-medium text-foreground hover:text-primary"
-            >
+          {profileHref ? (
+            <Link href={profileHref} className="truncate font-medium text-foreground hover:text-primary">
               {post.author}
             </Link>
           ) : (
@@ -112,7 +122,15 @@ function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
         </div>
       </div>
 
-      <h2 className="font-display text-lg font-semibold leading-snug text-foreground">{post.title}</h2>
+      {postHref ? (
+        <Link href={postHref}>
+          <h2 className="font-display text-lg font-semibold leading-snug text-foreground hover:text-primary">
+            {post.title}
+          </h2>
+        </Link>
+      ) : (
+        <h2 className="font-display text-lg font-semibold leading-snug text-foreground">{post.title}</h2>
+      )}
       {post.excerpt ? (
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-foreground/65">{post.excerpt}</p>
       ) : null}

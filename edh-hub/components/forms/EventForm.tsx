@@ -46,6 +46,9 @@ export default function EventForm() {
           ))}
         </datalist>
       </Field>
+      <Field label="Popis" hint="Volitelné. Např. Swiss + Top Cut, precons welcome…">
+        <textarea name="description" maxLength={500} rows={3} className={fieldClass} />
+      </Field>
       <SubmitButton label="Vytvořit event" />
     </form>
   );

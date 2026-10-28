@@ -27,49 +27,72 @@ function sampleEventsAround(now = new Date()): HubEvent[] {
     return instant?.toISOString() ?? `${key}T${hour}:00.000Z`;
   };
 
+  const sample = (
+    partial: Omit<HubEvent, "description" | "hostUsername" | "hostDisplayName" | "location"> & {
+      location?: string | null;
+      description?: string | null;
+      hostUsername?: string | null;
+      hostDisplayName?: string | null;
+    }
+  ): HubEvent => ({
+    location: null,
+    description: null,
+    hostUsername: "kosino",
+    hostDisplayName: "Kosino",
+    ...partial,
+  });
+
   return [
-    {
+    sample({
       id: "sample-1",
       startsAt: at(dayOffset(0), "18:00"),
       title: "cEDH Tournament",
       eventType: "cEDH Tournament",
-      location: "70-player Swiss · Most",
-    },
-    {
+      location: "Most",
+      description: "70-player Swiss + Top Cut",
+    }),
+    sample({
       id: "sample-2",
       startsAt: at(dayOffset(1), "19:00"),
       title: "Casual Pod",
       eventType: "Casual Pod",
-      location: "Precons welcome · Bílina",
-    },
-    {
+      location: "Bílina",
+      description: "Precons welcome · 4 players",
+      hostUsername: "elf_brewer",
+      hostDisplayName: "Elf_Brewer",
+    }),
+    sample({
       id: "sample-3",
       startsAt: at(dayOffset(2), "19:30"),
       title: "Friday Night Magic",
       eventType: "Friday Night Magic",
-      location: "Relaxed pods · Praha",
-    },
-    {
+      location: "Praha",
+      description: "Relaxed pods · prizes for fun",
+    }),
+    sample({
       id: "sample-4",
       startsAt: at(dayOffset(3), "17:00"),
       title: "EDH Tournament",
       eventType: "EDH Tournament",
-      location: "Store champs · Most",
-    },
-    {
+      location: "Most",
+      description: "Store champs",
+    }),
+    sample({
       id: "sample-5",
       startsAt: at(dayOffset(5), "20:00"),
       title: "Casual Pod",
       eventType: "Casual Pod",
-      location: "4 players · Discord",
-    },
-    {
+      location: "Discord",
+      description: "Online pod · camera optional",
+    }),
+    sample({
       id: "sample-6",
       startsAt: at(dayOffset(7), "18:00"),
       title: "cEDH Tournament",
       eventType: "cEDH Tournament",
-      location: "Top Cut · Online",
-    },
+      location: "Online",
+      description: "Top Cut · MTGO",
+    }),
   ];
 }
 
@@ -280,6 +303,8 @@ function EventItem({
   const style = eventTypeStyle(event.eventType);
   const block = dateBlock(event.startsAt);
 
+  const detailHref = live ? `/events/${event.id}` : null;
+
   return (
     <div className="animate-fade-rise flex items-center gap-3 rounded-xl border border-white/10 bg-card p-4 sm:gap-4">
       <div className="w-14 shrink-0 text-center">
@@ -287,17 +312,40 @@ function EventItem({
         <p className="font-display text-2xl font-bold leading-none">{block.day}</p>
         <p className="mt-0.5 text-[10px] uppercase text-foreground/45">{block.weekday}</p>
       </div>
-      <EventKindIcon eventType={event.eventType} className="h-12 w-12 rounded-xl sm:h-14 sm:w-14" />
+      {detailHref ? (
+        <Link href={detailHref} className="shrink-0">
+          <EventKindIcon eventType={event.eventType} className="h-12 w-12 rounded-xl sm:h-14 sm:w-14" />
+        </Link>
+      ) : (
+        <EventKindIcon eventType={event.eventType} className="h-12 w-12 rounded-xl sm:h-14 sm:w-14" />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-medium">{event.title}</h3>
+          {detailHref ? (
+            <Link href={detailHref} className="font-medium hover:text-primary">
+              {event.title}
+            </Link>
+          ) : (
+            <h3 className="font-medium">{event.title}</h3>
+          )}
           <span className={cn("rounded px-2 py-0.5 text-xs", style.chip)}>{style.label}</span>
           {joined ? (
             <span className="rounded bg-primary/20 px-2 py-0.5 text-xs text-primary">Jdeš</span>
           ) : null}
         </div>
-        {event.location ? <p className="mt-1 text-sm text-foreground/60">{event.location}</p> : null}
-        <p className="mt-1 text-xs text-foreground/45">{formatEventDate(event.startsAt)} · Europe/Prague</p>
+        {event.description ? (
+          <p className="mt-1 text-sm text-foreground/60">{event.description}</p>
+        ) : event.location ? (
+          <p className="mt-1 text-sm text-foreground/60">{event.location}</p>
+        ) : null}
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground/45">
+          <span>{formatEventDate(event.startsAt)} · Europe/Prague</span>
+          {event.hostUsername ? (
+            <Link href={`/profile/${event.hostUsername}`} className="hover:text-primary">
+              @{event.hostUsername}
+            </Link>
+          ) : null}
+        </div>
       </div>
       {live && signedIn ? (
         <form action={toggleRsvp} className="shrink-0">
