@@ -5,13 +5,13 @@ Prototyp sociální sítě pro hráče Commander / cEDH. UI brand: **EDH Social*
 ## Co je hotové
 
 - Next.js (App Router) + TypeScript + Tailwind + Supabase Auth
-- **Feed** — příspěvky (`kind=post`), create → detail
-- **Články** — `/articles` list + detail + create (`kind=article`)
-- **Kalendář eventů** (Event calendar) — měsíční mřížka, výběr dne, RSVP; časy v `Europe/Prague`
-- **Eventy** — create (cEDH Tournament / EDH Tournament / Friday Night Magic / Casual Pod), ikony v `public/icons/`, místa (Most, Bílina, …)
+- **Feed** — příspěvky (`kind=post`), create → detail → edit/delete, search `?q=`
+- **Články** — `/articles` list + detail + create/edit/delete (`kind=article`)
+- **Kalendář eventů** (Event calendar) — měsíční mřížka s ikonami, výběr dne, RSVP; časy v `Europe/Prague`
+- **Eventy** — create/edit/detail (cEDH Tournament / EDH Tournament / Friday Night Magic / Casual Pod), ikony v `public/icons/`, popis, search
 - **Profil / bio** — guest vs owner, úprava popisu, Admin badge pro `kosino`
-- **Decky** — create + seznam na profilu (placeholder art only)
-- SQL migrace: `supabase/migrations/20261028100000_init.sql` + `20261028120000_posts_kind.sql`
+- **Decky** — create/edit/detail + Moxfield CTA na profilu (placeholder art only)
+- SQL migrace ve složce `supabase/migrations/` (viz níže)
 
 Žádné oficiální artworky Magic karet, loga Wizards ani jiné chráněné materiály.
 
