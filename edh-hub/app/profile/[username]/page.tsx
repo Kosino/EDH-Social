@@ -40,7 +40,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   if (result.status !== "ok" || !result.data) notFound();
 
   const profile = result.data;
-  const commanders = [...new Set(profile.decks.map((deck) => deck.commander))];
+  const commanders = Array.from(new Set(profile.decks.map((deck) => deck.commander)));
 
   return (
     <div className="max-w-5xl">
