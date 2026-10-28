@@ -6,7 +6,11 @@ export default function OwnerProfilePreviewPage() {
     <ProfilePreview
       displayName="Kosino"
       username="kosino"
+      rawDisplayName="Kosino"
       bio="Admin EDH Social. Stavím cEDH a organizuju stoly v Mostě a Bílině."
+      avatarKey="star-wizard"
+      avatarUrl={null}
+      moxfieldUserUrl="https://moxfield.com/users/Kosino"
       isOwner
       admin
       commanders={["Atraxa", "Yuriko", "Kinnan"]}

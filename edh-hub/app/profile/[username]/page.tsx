@@ -17,7 +17,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         <ProfilePreview
           displayName={username}
           username={username.toLowerCase()}
+          rawDisplayName={username}
           bio="Procházím multivesmír deck po decku. Stavím tematické EDH listy s vysokou synergií."
+          avatarKey="forest-elf"
+          avatarUrl={null}
+          moxfieldUserUrl={null}
           isOwner={false}
           admin={false}
           commanders={["Atraxa", "Yuriko", "Kinnan"]}
@@ -34,7 +38,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   if (rawUsername === "me") {
     const user = await getCurrentUser();
-    // Guests must not be sent to /login from Profile — only via „Přihlásit se“.
     if (!user) redirect("/");
     if (!user.username) {
       return (
@@ -70,7 +73,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     <ProfilePreview
       displayName={profile.displayName}
       username={profile.username}
+      rawDisplayName={profile.rawDisplayName}
       bio={profile.bio}
+      avatarKey={profile.avatarKey}
+      avatarUrl={profile.avatarUrl}
+      moxfieldUserUrl={profile.moxfieldUserUrl}
       isOwner={isOwner}
       admin={isSuperuser(profile.username)}
       commanders={commanders}

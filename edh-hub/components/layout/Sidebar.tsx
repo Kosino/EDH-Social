@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Calendar, BookOpen, Plus, LogIn, LogOut } from "lucide-react";
+import { Home, Newspaper, User, Calendar, BookOpen, Plus, LogIn, LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import TreeMark from "@/components/brand/TreeMark";
 import { publicName } from "@/lib/admin";
@@ -29,7 +29,13 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
       </div>
 
       <nav className="space-y-1">
-        <NavItem href="/" icon={<Home size={18} />} label="Feed" active={pathname === "/"} />
+        <NavItem href="/" icon={<Home size={18} />} label="Domů" active={pathname === "/"} />
+        <NavItem
+          href="/feed"
+          icon={<Newspaper size={18} />}
+          label="Feed"
+          active={pathname === "/feed" || pathname.startsWith("/posts")}
+        />
         {profileHref ? (
           <NavItem
             href={profileHref}

@@ -226,12 +226,21 @@ export default async function EventsPage({
             cEDH, EDH turnaje, FNM a casual pody · časy v Europe/Prague
           </p>
         </div>
-        <Link
-          href="/events/new"
-          className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
-        >
-          + Vytvořit event
-        </Link>
+        {user ? (
+          <Link
+            href="/events/new"
+            className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
+          >
+            + Vytvořit event
+          </Link>
+        ) : (
+          <Link
+            href="/login?next=/events/new"
+            className="shrink-0 rounded-lg border border-white/15 px-4 py-2 text-sm text-foreground/70 hover:bg-white/5"
+          >
+            Přihlas se pro vytvoření
+          </Link>
+        )}
       </div>
 
       <div className="mb-6">
@@ -269,11 +278,18 @@ export default async function EventsPage({
 
       {!monthHasEvents && listIsLive && !q ? (
         <p className="mb-6 text-sm text-foreground/50">
-          V tomto měsíci zatím nejsou žádné eventy.{" "}
-          <Link href="/events/new" className="text-primary hover:underline">
-            Přidej první
-          </Link>
-          .
+          V tomto měsíci zatím nejsou žádné eventy.
+          {user ? (
+            <>
+              {" "}
+              <Link href="/events/new" className="text-primary hover:underline">
+                Přidej první
+              </Link>
+              .
+            </>
+          ) : (
+            <> Kalendář můžeš prohlížet; vytvoření vyžaduje přihlášení.</>
+          )}
         </p>
       ) : null}
 
@@ -303,19 +319,29 @@ export default async function EventsPage({
           </p>
         ) : view.day ? (
           <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/60">
-            V tento den není žádný event.{" "}
-            <Link href="/events/new" className="text-primary hover:underline">
-              Vytvoř event
-            </Link>
-            .
+            V tento den není žádný event.
+            {user ? (
+              <>
+                {" "}
+                <Link href="/events/new" className="text-primary hover:underline">
+                  Vytvoř event
+                </Link>
+                .
+              </>
+            ) : null}
           </p>
         ) : (
           <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/60">
-            Žádné nadcházející eventy.{" "}
-            <Link href="/events/new" className="text-primary hover:underline">
-              Vytvoř první
-            </Link>
-            .
+            Žádné nadcházející eventy.
+            {user ? (
+              <>
+                {" "}
+                <Link href="/events/new" className="text-primary hover:underline">
+                  Vytvoř první
+                </Link>
+                .
+              </>
+            ) : null}
           </p>
         )
       ) : (
@@ -422,14 +448,14 @@ function EventItem({
             {joined ? "Odhlásit" : "Přidat se"}
           </button>
         </form>
-      ) : (
+      ) : live ? (
         <Link
           href={`/login?next=${encodeURIComponent(returnTo)}`}
-          className={cn("shrink-0 rounded-lg border px-4 py-1.5 text-sm", style.border)}
+          className="shrink-0 text-sm text-primary hover:underline"
         >
-          Přidat se
+          Přihlas se pro účast
         </Link>
-      )}
+      ) : null}
     </div>
   );
 }

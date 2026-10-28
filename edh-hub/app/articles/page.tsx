@@ -15,6 +15,8 @@ const samples: FeedPost[] = [
     authorId: "sample-author-3",
     author: "Kosino",
     authorUsername: "kosino",
+    authorAvatarKey: "star-wizard",
+    authorAvatarUrl: null,
     createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -27,6 +29,8 @@ const samples: FeedPost[] = [
     authorId: "sample-author-1",
     author: "AetherMaster",
     authorUsername: "aethermaster",
+    authorAvatarKey: "forest-elf",
+    authorAvatarUrl: null,
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
@@ -51,14 +55,7 @@ export default async function ArticlesPage() {
           >
             + Nový článek
           </Link>
-        ) : (
-          <Link
-            href="/login?next=/articles/new"
-            className="shrink-0 rounded-lg border border-primary px-4 py-2 text-sm text-primary hover:bg-primary/10"
-          >
-            Přihlásit a psát
-          </Link>
-        )}
+        ) : null}
       </div>
 
       {result.status === "error" && <DataNotice message={result.message} />}
@@ -71,11 +68,18 @@ export default async function ArticlesPage() {
 
       {live && articles.length === 0 ? (
         <p className="rounded-xl border border-dashed border-white/15 bg-card/60 p-8 text-center text-sm text-foreground/70">
-          Zatím žádné články.{" "}
-          <Link href={user ? "/articles/new" : "/login?next=/articles/new"} className="text-primary hover:underline">
-            Napiš první
-          </Link>
-          .
+          Zatím žádné články.
+          {user ? (
+            <>
+              {" "}
+              <Link href="/articles/new" className="text-primary hover:underline">
+                Napiš první
+              </Link>
+              .
+            </>
+          ) : (
+            <> Přihlášení odemkne psaní článků.</>
+          )}
         </p>
       ) : (
         <div className="space-y-4">

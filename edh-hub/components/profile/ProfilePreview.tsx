@@ -1,12 +1,17 @@
 import Link from "next/link";
-import BioForm from "@/components/profile/BioForm";
+import ProfileEditor from "@/components/profile/ProfileEditor";
+import UserAvatar from "@/components/profile/UserAvatar";
 import type { ProfileDeck } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils";
 
 export function ProfilePreview({
   displayName,
   username,
+  rawDisplayName,
   bio,
+  avatarKey,
+  avatarUrl,
+  moxfieldUserUrl,
   isOwner,
   admin,
   commanders,
@@ -15,7 +20,11 @@ export function ProfilePreview({
 }: {
   displayName: string;
   username: string;
+  rawDisplayName: string | null;
   bio: string | null;
+  avatarKey: string | null;
+  avatarUrl: string | null;
+  moxfieldUserUrl: string | null;
   isOwner: boolean;
   admin: boolean;
   commanders: string[];
@@ -28,9 +37,13 @@ export function ProfilePreview({
         <div className="h-28 bg-gradient-to-r from-primary via-primary/70 to-accent sm:h-32" />
         <div className="relative px-6 pb-6 pt-0">
           <div className="-mt-12 mb-4">
-            <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-card bg-gradient-to-br from-primary to-casual font-display text-3xl font-bold text-white shadow-[0_0_24px_-6px] shadow-primary">
-              {displayName.slice(0, 1).toUpperCase()}
-            </div>
+            <UserAvatar
+              displayName={displayName}
+              avatarKey={avatarKey}
+              avatarUrl={avatarUrl}
+              size={96}
+              className="border-4 border-card shadow-[0_0_24px_-6px] shadow-primary"
+            />
           </div>
           <h1 className="font-display text-3xl font-bold">
             {displayName}
@@ -44,7 +57,28 @@ export function ProfilePreview({
           <p className="mt-3 max-w-xl whitespace-pre-wrap text-sm leading-relaxed text-foreground/75">
             {bio || "Zatím bez popisu."}
           </p>
-          {isOwner ? <BioForm bio={bio} /> : null}
+          {moxfieldUserUrl ? (
+            <p className="mt-3">
+              <a
+                href={moxfieldUserUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Otevřít na Moxfieldu →
+              </a>
+            </p>
+          ) : null}
+          {isOwner ? (
+            <ProfileEditor
+              displayName={displayName}
+              rawDisplayName={rawDisplayName}
+              bio={bio}
+              avatarKey={avatarKey}
+              avatarUrl={avatarUrl}
+              moxfieldUserUrl={moxfieldUserUrl}
+            />
+          ) : null}
         </div>
       </div>
 

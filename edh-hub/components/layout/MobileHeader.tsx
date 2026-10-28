@@ -25,7 +25,8 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
         )}
       </div>
       <nav className="mt-3 flex flex-wrap gap-4 text-sm text-foreground/70">
-        <Link href="/">Feed</Link>
+        <Link href="/">Domů</Link>
+        <Link href="/feed">Feed</Link>
         <Link href="/events">Eventy</Link>
         <Link href="/articles">Články</Link>
         {user?.username ? <Link href={`/profile/${user.username}`}>Profil</Link> : null}

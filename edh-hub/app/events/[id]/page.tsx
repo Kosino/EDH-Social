@@ -131,9 +131,9 @@ export default async function EventDetailPage({
             ) : (
               <Link
                 href={`/login?next=${encodeURIComponent(returnTo)}`}
-                className={cn("rounded-lg border px-5 py-2 text-sm font-medium", style.border)}
+                className="rounded-lg border border-white/15 px-5 py-2 text-sm text-foreground/75 hover:bg-white/5"
               >
-                Přidat se
+                Přihlas se pro účast
               </Link>
             )}
             {isHost ? (
