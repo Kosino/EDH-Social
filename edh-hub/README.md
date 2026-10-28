@@ -23,7 +23,7 @@ Prototyp sociální sítě pro hráče Magic: The Gathering (EDH / cEDH).
 
 ## Další kroky (s Grokem v Cursoru)
 
-1. Dokončit napojení Supabase: publishable klíč do `.env.local` a spustit migraci (níže)
+1. Dokončit napojení Supabase: v SQL editoru spustit migraci (klíč už je v `.env.local`)
 2. Vytvořit formuláře pro decky, posty a eventy
 3. Přidat reálný kalendář (např. react-big-calendar)
 
@@ -31,9 +31,9 @@ Prototyp sociální sítě pro hráče Magic: The Gathering (EDH / cEDH).
 Projekt záměrně neobsahuje žádné oficiální obrázky karet, logo Wizards of the Coast ani jiné chráněné materiály. Všechny vizuály jsou generické placeholdery.
 
 ## Environment
-Zkopíruj `.env.example` → `.env.local`. URL projektu už je vyplněná. Doplň publishable klíč (nebo legacy anon key) ze Supabase → Project Settings → API.
+`.env.local` je v repozitáři a obsahuje URL projektu a publishable klíč. Service-role klíč sem nepatří.
 
-Pak v SQL editoru spusť `supabase/migrations/20261028100000_init.sql`.
+V SQL editoru spusť `supabase/migrations/20261028100000_init.sql`.
 
 V Authentication → URL Configuration nastav:
 
