@@ -27,6 +27,10 @@ Prototyp sociální sítě pro hráče Magic: The Gathering (EDH / cEDH).
 1. Dokončit napojení Supabase: v SQL editoru spustit migraci (klíč už je v `.env.local`)
 2. Přidat reálný kalendář (např. react-big-calendar)
 
+## Admin
+
+Účet `kosino` (jan.kos.aiswarm@gmail.com) je super user a admin projektu. Přihlašovací jméno je `kosino`, zobrazované jméno je Kosino. Heslo v repozitáři není. Další testování používá tento účet. Přihlášení začne fungovat až po potvrzení e-mailu.
+
 ## Autorská práva
 Projekt záměrně neobsahuje žádné oficiální obrázky karet, logo Wizards of the Coast ani jiné chráněné materiály. Všechny vizuály jsou generické placeholdery.
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Home, User, Calendar, BookOpen, Plus, LogIn, LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
+import { publicName } from "@/lib/admin";
 import type { SessionUser } from "@/lib/supabase/session";
 
 export default function Sidebar({ user }: { user: SessionUser | null }) {
@@ -25,7 +26,9 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
       <div className="mt-8 space-y-3">
         {user ? (
           <>
-            <p className="truncate text-xs text-foreground/50">{user.username ?? user.email}</p>
+            <p className="truncate text-xs text-foreground/50">
+              {user.username ? publicName(user.username) : user.email}
+            </p>
             <Link
               href="/posts/new"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-black transition hover:bg-primary/90"

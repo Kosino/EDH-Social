@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
+import { isSuperuser } from "@/lib/admin";
 import { getProfile, type ProfileDeck } from "@/lib/supabase/queries";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -51,7 +52,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         <div className="flex items-start gap-5">
           <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary to-accent" />
           <div className="flex-1">
-            <h1 className="text-3xl font-bold">{profile.displayName}</h1>
+            <h1 className="text-3xl font-bold">
+              {profile.displayName}
+              {isSuperuser(profile.username) && (
+                <span className="ml-3 align-middle rounded bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
+                  Admin
+                </span>
+              )}
+            </h1>
             <p className="mt-1 text-foreground/70">@{profile.username}</p>
             <p className="mt-3 max-w-xl text-sm text-foreground/60">
               {profile.bio || "Zatím bez popisu."}

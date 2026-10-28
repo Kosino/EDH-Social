@@ -1,3 +1,4 @@
+import { publicName } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
@@ -93,7 +94,7 @@ export async function getFeedPosts(): Promise<QueryResult<FeedPost[]>> {
       excerpt: row.excerpt,
       body: row.body,
       deckName: row.deck_name,
-      author: usernameFrom(row.author),
+      author: publicName(usernameFrom(row.author)),
       createdAt: row.created_at,
     })),
   };
@@ -130,7 +131,7 @@ export async function getPost(id: string): Promise<QueryResult<FeedPost | null>>
       excerpt: row.excerpt,
       body: row.body,
       deckName: row.deck_name,
-      author: usernameFrom(row.author),
+      author: publicName(usernameFrom(row.author)),
       createdAt: row.created_at,
     },
   };
@@ -175,7 +176,7 @@ export async function getProfile(username: string): Promise<QueryResult<ProfileV
     data: {
       id: row.id,
       username: row.username,
-      displayName: row.display_name || row.username,
+      displayName: publicName(row.username, row.display_name),
       bio: row.bio,
       decks: decks.map((deck) => ({
         id: deck.id,
