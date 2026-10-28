@@ -2,18 +2,20 @@ import Link from "next/link";
 import AuthCard from "@/components/auth/AuthCard";
 import SubmitButton from "@/components/auth/SubmitButton";
 import { signup } from "@/app/auth/actions";
+import { safeNext } from "@/lib/redirect";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { redirect } from "next/navigation";
 
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; message?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; next?: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (user) redirect("/");
-
   const params = await searchParams;
+  const next = safeNext(params.next);
+  const user = await getCurrentUser();
+  if (user) redirect(next);
+  const loginHref = next === "/" ? "/login" : `/login?next=${encodeURIComponent(next)}`;
 
   return (
     <AuthCard
@@ -24,13 +26,14 @@ export default async function SignupPage({
       footer={
         <>
           Už účet máš?{" "}
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href={loginHref} className="text-primary hover:underline">
             Přihlas se
           </Link>
         </>
       }
     >
       <form action={signup} className="space-y-4">
+        <input type="hidden" name="next" value={next} />
         <div>
           <label htmlFor="username" className="mb-1.5 block text-sm">
             Uživatelské jméno

@@ -25,6 +25,7 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
         <Link href="/">Feed</Link>
         <Link href="/events">Eventy</Link>
         <Link href={user?.username ? `/profile/${user.username}` : "/profile/me"}>Profil</Link>
+        <Link href="/posts/new">Příspěvek</Link>
       </nav>
     </header>
   );

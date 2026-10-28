@@ -1,5 +1,8 @@
+import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
-import { getUpcomingEvents, type HubEvent } from "@/lib/supabase/queries";
+import { toggleRsvp } from "@/app/create/actions";
+import { getMyRsvpEventIds, getUpcomingEvents, type HubEvent } from "@/lib/supabase/queries";
+import { getCurrentUser } from "@/lib/supabase/session";
 import { formatEventDate } from "@/lib/utils";
 
 const samples: HubEvent[] = [
@@ -8,10 +11,17 @@ const samples: HubEvent[] = [
   { id: "3", startsAt: "2026-05-22T18:00:00.000Z", title: "Casual Pod", eventType: "Casual", location: null },
 ];
 
-export default async function EventsPage() {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
   const result = await getUpcomingEvents();
   const events = result.status === "ok" ? result.data : samples;
   const live = result.status === "ok";
+  const user = live ? await getCurrentUser() : null;
+  const joined = new Set(user ? await getMyRsvpEventIds(user.id) : []);
 
   return (
     <div className="max-w-6xl">
@@ -20,9 +30,9 @@ export default async function EventsPage() {
           <h1 className="text-3xl font-bold">Kalendář eventů</h1>
           <p className="mt-1 text-foreground/60">Turnaje, casual setkání a online pody</p>
         </div>
-        <button className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-black hover:bg-accent/90">
+        <Link href="/events/new" className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-black hover:bg-accent/90">
           + Vytvořit event
-        </button>
+        </Link>
       </div>
 
       <div className="mb-8 rounded-2xl border border-white/10 bg-card p-6">
@@ -47,14 +57,21 @@ export default async function EventsPage() {
       </div>
 
       {result.status === "error" && <DataNotice message={result.message} />}
+      {params.error && <DataNotice message={params.error} />}
 
       <h2 className="mb-4 text-xl font-semibold">Nadcházející</h2>
       {events.length === 0 ? (
-        <p className="text-sm text-foreground/60">Žádné nadcházející eventy.</p>
+        <p className="text-sm text-foreground/60">
+          Žádné nadcházející eventy.{" "}
+          <Link href="/events/new" className="text-primary hover:underline">
+            Vytvoř první
+          </Link>
+          .
+        </p>
       ) : (
         <div className="space-y-3">
           {events.map((event) => (
-            <EventItem key={event.id} event={event} />
+            <EventItem key={event.id} event={event} joined={joined.has(event.id)} signedIn={Boolean(user)} live={live} />
           ))}
         </div>
       )}
@@ -62,17 +79,37 @@ export default async function EventsPage() {
   );
 }
 
-function EventItem({ event }: { event: HubEvent }) {
+function EventItem({
+  event,
+  joined,
+  signedIn,
+  live,
+}: {
+  event: HubEvent;
+  joined: boolean;
+  signedIn: boolean;
+  live: boolean;
+}) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-white/10 bg-card p-4">
       <div>
         <p className="text-xs text-foreground/50">{formatEventDate(event.startsAt)}</p>
         <h3 className="font-medium">{event.title}</h3>
+        {event.location && <p className="text-sm text-foreground/60">{event.location}</p>}
         <span className="mt-1 inline-block rounded bg-white/10 px-2 py-0.5 text-xs">{event.eventType}</span>
       </div>
-      <button className="rounded-lg border border-primary px-4 py-1.5 text-sm text-primary hover:bg-primary/10">
-        Join
-      </button>
+      {live && signedIn ? (
+        <form action={toggleRsvp}>
+          <input type="hidden" name="eventId" value={event.id} />
+          <button className="rounded-lg border border-primary px-4 py-1.5 text-sm text-primary hover:bg-primary/10">
+            {joined ? "Jdu" : "Přidat se"}
+          </button>
+        </form>
+      ) : (
+        <Link href="/login?next=/events" className="rounded-lg border border-primary px-4 py-1.5 text-sm text-primary hover:bg-primary/10">
+          Přidat se
+        </Link>
+      )}
     </div>
   );
 }

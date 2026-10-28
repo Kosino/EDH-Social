@@ -188,6 +188,17 @@ export async function getProfile(username: string): Promise<QueryResult<ProfileV
   };
 }
 
+export async function getMyRsvpEventIds(userId: string): Promise<string[]> {
+  if (!getSupabaseEnv()) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("event_rsvps").select("event_id").eq("user_id", userId);
+  if (error) {
+    console.error("RSVP lookup failed", error.code, error.message);
+    return [];
+  }
+  return ((data ?? []) as Array<{ event_id: string }>).map((row) => row.event_id);
+}
+
 export async function getUpcomingEvents(): Promise<QueryResult<HubEvent[]>> {
   if (!getSupabaseEnv()) return { status: "unconfigured" };
 

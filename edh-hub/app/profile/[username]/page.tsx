@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import { getProfile, type ProfileDeck } from "@/lib/supabase/queries";
@@ -40,6 +41,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   if (result.status !== "ok" || !result.data) notFound();
 
   const profile = result.data;
+  const viewer = await getCurrentUser();
+  const isOwner = viewer?.username === profile.username;
   const commanders = Array.from(new Set(profile.decks.map((deck) => deck.commander)));
 
   return (
@@ -75,7 +78,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-semibold">Decky</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">Decky</h2>
+          {isOwner && (
+            <Link href="/decks/new" className="text-sm text-primary hover:underline">
+              + Přidat deck
+            </Link>
+          )}
+        </div>
         {profile.decks.length === 0 ? (
           <p className="text-sm text-foreground/60">Žádné veřejné decky.</p>
         ) : (

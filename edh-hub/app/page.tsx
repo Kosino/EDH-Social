@@ -40,7 +40,11 @@ export default async function Home() {
 
       {posts.length === 0 ? (
         <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/70">
-          Zatím tu nic není. Až někdo napíše příspěvek, objeví se tady.
+          Zatím tu nic není.{" "}
+          <Link href="/posts/new" className="text-primary hover:underline">
+            Napiš první příspěvek
+          </Link>
+          .
         </p>
       ) : (
         <div className="space-y-4">

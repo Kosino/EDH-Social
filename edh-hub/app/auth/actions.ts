@@ -4,11 +4,15 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseEnv } from "@/lib/supabase/env";
+import { safeNext } from "@/lib/redirect";
 
 const USERNAME = /^[A-Za-z0-9_]{3,20}$/;
 
-function redirectWith(path: string, key: "error" | "message", value: string): never {
-  redirect(`${path}?${key}=${encodeURIComponent(value.slice(0, 240))}`);
+function redirectWith(path: string, key: "error" | "message", value: string, next = "/"): never {
+  const params = new URLSearchParams();
+  if (next !== "/") params.set("next", next);
+  params.set(key, value.slice(0, 240));
+  redirect(`${path}?${params}`);
 }
 
 function authError(message: string): string {
@@ -35,16 +39,17 @@ export async function login(formData: FormData) {
 
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = safeNext(String(formData.get("next") ?? "/"));
 
   if (!isEmail(email) || password.length < 6) {
-    redirectWith("/login", "error", "Zadej platný e-mail a heslo (alespoň 6 znaků).");
+    redirectWith("/login", "error", "Zadej platný e-mail a heslo (alespoň 6 znaků).", next);
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirectWith("/login", "error", authError(error.message));
+  if (error) redirectWith("/login", "error", authError(error.message), next);
 
-  redirect("/");
+  redirect(next);
 }
 
 export async function signup(formData: FormData) {
@@ -59,12 +64,13 @@ export async function signup(formData: FormData) {
   const username = String(formData.get("username") ?? "").trim().toLowerCase();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const next = safeNext(String(formData.get("next") ?? "/"));
 
   if (!USERNAME.test(username)) {
-    redirectWith("/signup", "error", "Uživatelské jméno: 3–20 znaků, jen písmena, čísla a podtržítko.");
+    redirectWith("/signup", "error", "Uživatelské jméno: 3–20 znaků, jen písmena, čísla a podtržítko.", next);
   }
   if (!isEmail(email) || password.length < 6) {
-    redirectWith("/signup", "error", "Zadej platný e-mail a heslo (alespoň 6 znaků).");
+    redirectWith("/signup", "error", "Zadej platný e-mail a heslo (alespoň 6 znaků).", next);
   }
 
   const supabase = await createClient();
@@ -79,14 +85,15 @@ export async function signup(formData: FormData) {
       redirectWith(
         "/signup",
         "error",
-        "Tabulky ještě neexistují. V SQL editoru spusť supabase/migrations/20261028100000_init.sql."
+        "Tabulky ještě neexistují. V SQL editoru spusť supabase/migrations/20261028100000_init.sql.",
+        next
       );
     }
-    redirectWith("/signup", "error", "Registraci se nepodařilo ověřit. Zkus to znovu.");
+    redirectWith("/signup", "error", "Registraci se nepodařilo ověřit. Zkus to znovu.", next);
   }
 
   if (existing) {
-    redirectWith("/signup", "error", "Tohle uživatelské jméno už někdo používá.");
+    redirectWith("/signup", "error", "Tohle uživatelské jméno už někdo používá.", next);
   }
 
   const origin = (await headers()).get("origin") ?? "http://localhost:3000";
@@ -99,13 +106,13 @@ export async function signup(formData: FormData) {
     },
   });
 
-  if (error) redirectWith("/signup", "error", authError(error.message));
+  if (error) redirectWith("/signup", "error", authError(error.message), next);
 
   if (!data.session) {
-    redirectWith("/signup", "message", "Zkontroluj e-mail a potvrď účet. Pak se můžeš přihlásit.");
+    redirectWith("/signup", "message", "Zkontroluj e-mail a potvrď účet. Pak se můžeš přihlásit.", next);
   }
 
-  redirect("/");
+  redirect(next);
 }
 
 export async function signOut() {

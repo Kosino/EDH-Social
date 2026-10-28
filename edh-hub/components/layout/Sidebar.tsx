@@ -26,12 +26,12 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
         {user ? (
           <>
             <p className="truncate text-xs text-foreground/50">{user.username ?? user.email}</p>
-            <button
-              type="button"
+            <Link
+              href="/posts/new"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-black transition hover:bg-primary/90"
             >
               <Plus size={16} /> Nový příspěvek
-            </button>
+            </Link>
             <form action={signOut}>
               <button
                 type="submit"
