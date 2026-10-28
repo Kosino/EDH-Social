@@ -19,7 +19,7 @@ const display = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: `${BRAND_NAME} – Commander komunita`,
+  title: `${BRAND_NAME} – MTG Commander Network`,
   description: "EDH & cEDH sociální síť – decky, eventy, články",
 };
 

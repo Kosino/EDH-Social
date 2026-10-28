@@ -7,3 +7,4 @@ tsconfig.tsbuildinfo
 # Publishable client key only. Service-role keys stay untracked.
 !.env.local
 npm-debug.log*
+.vercel

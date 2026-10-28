@@ -1,4 +1,6 @@
 import Link from "next/link";
+import TreeMark from "@/components/brand/TreeMark";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import { missingSupabaseEnv } from "@/lib/supabase/env";
 
 export default function AuthCard({
@@ -25,7 +27,14 @@ export default function AuthCard({
 
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-3xl font-bold">{title}</h1>
+      <div className="mb-8 flex items-center gap-3">
+        <TreeMark className="h-9 w-9" />
+        <div>
+          <p className="font-display text-lg font-bold">{BRAND_NAME}</p>
+          <p className="text-xs text-foreground/50">{BRAND_TAGLINE}</p>
+        </div>
+      </div>
+      <h1 className="font-display text-3xl font-bold">{title}</h1>
       <p className="mt-1 text-foreground/60">{subtitle}</p>
 
       <div className="mt-8 rounded-2xl border border-white/10 bg-card p-6">
