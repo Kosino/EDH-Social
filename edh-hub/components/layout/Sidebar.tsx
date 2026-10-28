@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Newspaper, User, Calendar, BookOpen, Plus, LogIn, LogOut } from "lucide-react";
+import { Home, Newspaper, User, Calendar, BookOpen, Plus, LogIn, LogOut, Shield } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import TreeMark from "@/components/brand/TreeMark";
-import { publicName } from "@/lib/admin";
+import { isSuperuser, publicName } from "@/lib/admin";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import type { SessionUser } from "@/lib/supabase/session";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 export default function Sidebar({ user }: { user: SessionUser | null }) {
   const pathname = usePathname();
   const profileHref = user?.username ? `/profile/${user.username}` : null;
+  const showAdmin = isSuperuser(user?.username);
 
   return (
     <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-card p-6 md:flex">
@@ -56,6 +57,14 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
           label="Články"
           active={pathname.startsWith("/articles")}
         />
+        {showAdmin ? (
+          <NavItem
+            href="/admin"
+            icon={<Shield size={18} />}
+            label="Admin"
+            active={pathname.startsWith("/admin")}
+          />
+        ) : null}
       </nav>
 
       <div className="mt-8 space-y-3">
