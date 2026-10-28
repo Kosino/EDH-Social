@@ -37,7 +37,7 @@ export default async function Home() {
     <div className="max-w-4xl">
       <div className="mb-8 flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Feed</h1>
+          <h1 className="font-display text-3xl font-bold">Feed</h1>
           <p className="mt-1 text-foreground/60">Nejnovější příspěvky z komunity EDH</p>
         </div>
         <Link
@@ -77,7 +77,7 @@ export default async function Home() {
 
 function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
   return (
-    <article className="rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
+    <article className="animate-fade-rise rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
       <div className="mb-3 flex items-center gap-3 text-sm text-foreground/60">
         <div className="h-8 w-8 rounded-full bg-primary/30" />
         {live && post.authorUsername !== "hráč" ? (

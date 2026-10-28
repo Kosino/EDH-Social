@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
-import MonthCalendar from "@/components/events/MonthCalendar";
+import MonthCalendar, { type DayMarker } from "@/components/events/MonthCalendar";
 import { toggleRsvp } from "@/app/create/actions";
+import { eventTypeStyle } from "@/lib/brand";
 import { eventsPath, formatDayLabel, pragueDateKey, pragueMonthRange, resolveCalendarQuery } from "@/lib/calendar";
 import { getEventsInRange, getMyRsvpEventIds, getUpcomingEvents, type HubEvent, type QueryResult } from "@/lib/supabase/queries";
 import { getCurrentUser } from "@/lib/supabase/session";
-import { formatEventDate, pragueLocalToUtc } from "@/lib/utils";
+import { cn, formatEventDate, pragueLocalToUtc } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,21 @@ function noticesFor(results: Array<QueryResult<unknown>>, error?: string) {
   return notices;
 }
 
+function dateBlock(iso: string) {
+  const parts = new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: "Europe/Prague",
+    month: "short",
+    day: "numeric",
+    weekday: "short",
+  }).formatToParts(new Date(iso));
+  const read = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    month: read("month").replace(".", "").toUpperCase(),
+    day: read("day"),
+    weekday: read("weekday").replace(".", "").toUpperCase(),
+  };
+}
+
 export default async function EventsPage({
   searchParams,
 }: {
@@ -101,23 +117,27 @@ export default async function EventsPage({
   const user = listIsLive ? await getCurrentUser() : null;
   const joined = new Set(user ? await getMyRsvpEventIds(user.id) : []);
   const returnTo = eventsPath({ month: view.month.key, day: view.day });
-  const counts: Record<string, number> = {};
+  const markers: Record<string, DayMarker[]> = {};
   for (const event of monthEvents) {
     const key = pragueDateKey(event.startsAt);
-    counts[key] = (counts[key] ?? 0) + 1;
+    if (!markers[key]) markers[key] = [];
+    markers[key].push({ title: event.title, eventType: event.eventType });
   }
   const monthHasEvents = monthEvents.length > 0;
 
   return (
     <div className="max-w-6xl">
-      <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Kalendář eventů</h1>
+          <h1 className="font-display text-3xl font-bold">Kalendář eventů</h1>
           <p className="mt-1 text-foreground/60">
             Turnaje, casual setkání a online pody · časy v Europe/Prague
           </p>
         </div>
-        <Link href="/events/new" className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-black hover:bg-accent/90">
+        <Link
+          href="/events/new"
+          className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
+        >
           + Vytvořit event
         </Link>
       </div>
@@ -126,8 +146,17 @@ export default async function EventsPage({
         month={view.month}
         selectedDay={view.day}
         todayKey={pragueDateKey(new Date())}
-        counts={counts}
+        markers={markers}
       />
+
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-3 text-xs text-foreground/55">
+        <div className="flex flex-wrap gap-4">
+          <LegendDot className="bg-primary" label="Competitive" />
+          <LegendDot className="bg-casual" label="Casual" />
+          <LegendDot className="bg-accent" label="Online" />
+        </div>
+        <p>Všechny časy jsou v Europe/Prague</p>
+      </div>
 
       {!monthHasEvents && listIsLive ? (
         <p className="mb-6 text-sm text-foreground/50">
@@ -147,7 +176,7 @@ export default async function EventsPage({
       ) : null}
 
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold">{view.day ? formatDayLabel(view.day) : "Nadcházející"}</h2>
+        <h2 className="font-display text-xl font-semibold">{view.day ? formatDayLabel(view.day) : "Nadcházející"}</h2>
         {view.day ? (
           <Link href={eventsPath({ month: view.month.key })} className="shrink-0 text-sm text-primary hover:underline">
             Zrušit výběr dne
@@ -193,6 +222,15 @@ export default async function EventsPage({
   );
 }
 
+function LegendDot({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className={cn("h-2 w-2 rounded-full", className)} />
+      {label}
+    </span>
+  );
+}
+
 function EventItem({
   event,
   joined,
@@ -210,34 +248,40 @@ function EventItem({
   monthKey: string;
   dayKey: string | null;
 }) {
+  const style = eventTypeStyle(event.eventType);
+  const block = dateBlock(event.startsAt);
+
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-card p-4">
-      <div>
-        <p className="text-xs text-foreground/50">{formatEventDate(event.startsAt)}</p>
-        <h3 className="font-medium">
-          {event.title}
+    <div className="animate-fade-rise flex items-center gap-4 rounded-xl border border-white/10 bg-card p-4">
+      <div className="w-14 shrink-0 text-center">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/45">{block.month}</p>
+        <p className="font-display text-2xl font-bold leading-none">{block.day}</p>
+        <p className="mt-0.5 text-[10px] uppercase text-foreground/45">{block.weekday}</p>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-medium">{event.title}</h3>
+          <span className={cn("rounded px-2 py-0.5 text-xs", style.chip)}>{style.label}</span>
           {joined ? (
-            <span className="ml-2 align-middle rounded bg-primary/20 px-2 py-0.5 text-xs font-normal text-primary">
-              Jdeš
-            </span>
+            <span className="rounded bg-primary/20 px-2 py-0.5 text-xs text-primary">Jdeš</span>
           ) : null}
-        </h3>
-        {event.location && <p className="text-sm text-foreground/60">{event.location}</p>}
-        <span className="mt-1 inline-block rounded bg-white/10 px-2 py-0.5 text-xs">{event.eventType}</span>
+        </div>
+        {event.location ? <p className="mt-1 text-sm text-foreground/60">{event.location}</p> : null}
+        <p className="mt-1 text-xs text-foreground/45">{formatEventDate(event.startsAt)} · Europe/Prague</p>
       </div>
       {live && signedIn ? (
-        <form action={toggleRsvp}>
+        <form action={toggleRsvp} className="shrink-0">
           <input type="hidden" name="eventId" value={event.id} />
           <input type="hidden" name="month" value={monthKey} />
           {dayKey ? <input type="hidden" name="day" value={dayKey} /> : null}
-          <button className="rounded-lg border border-primary px-4 py-1.5 text-sm text-primary hover:bg-primary/10">
+          <button className={cn("rounded-lg border px-4 py-1.5 text-sm", style.border)}>
             {joined ? "Odhlásit" : "Přidat se"}
           </button>
         </form>
       ) : (
         <Link
           href={`/login?next=${encodeURIComponent(returnTo)}`}
-          className="rounded-lg border border-primary px-4 py-1.5 text-sm text-primary hover:bg-primary/10"
+          className={cn("shrink-0 rounded-lg border px-4 py-1.5 text-sm", style.border)}
         >
           Přidat se
         </Link>

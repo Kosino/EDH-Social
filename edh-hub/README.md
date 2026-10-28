@@ -1,6 +1,6 @@
-# EDH Hub
+# EDH Social
 
-Prototyp sociální sítě pro hráče Commander / cEDH. Aplikace žije ve složce `edh-hub`.
+Prototyp sociální sítě pro hráče Commander / cEDH. UI brand: **EDH Social**. Aplikace žije ve složce `edh-hub`.
 
 ## Co je hotové
 

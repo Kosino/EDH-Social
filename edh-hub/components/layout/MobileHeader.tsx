@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
+import TreeMark from "@/components/brand/TreeMark";
+import { BRAND_NAME } from "@/lib/brand";
 import type { SessionUser } from "@/lib/supabase/session";
 
 export default function MobileHeader({ user }: { user: SessionUser | null }) {
   return (
     <header className="sticky top-0 z-10 border-b border-white/10 bg-card/95 px-4 py-3 backdrop-blur md:hidden">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/" className="font-bold text-primary">
-          EDH Hub
+        <Link href="/" className="flex items-center gap-2 font-display font-bold text-foreground">
+          <TreeMark className="h-7 w-7" />
+          {BRAND_NAME}
         </Link>
         {user ? (
           <form action={signOut}>

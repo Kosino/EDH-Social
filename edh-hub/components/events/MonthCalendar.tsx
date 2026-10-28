@@ -8,9 +8,12 @@ import {
   shiftMonth,
   type CalendarMonth,
 } from "@/lib/calendar";
+import { eventTypeStyle } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const WEEKDAYS = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"] as const;
+
+export type DayMarker = { title: string; eventType: string };
 
 function eventCountLabel(count: number) {
   if (count === 1) return "1 event";
@@ -22,12 +25,12 @@ export default function MonthCalendar({
   month,
   selectedDay,
   todayKey,
-  counts,
+  markers,
 }: {
   month: CalendarMonth;
   selectedDay: string | null;
   todayKey: string;
-  counts: Record<string, number>;
+  markers: Record<string, DayMarker[]>;
 }) {
   const title = formatMonthLabel(month);
   const previous = shiftMonth(month, -1);
@@ -35,7 +38,7 @@ export default function MonthCalendar({
   const cells = calendarCells(month);
 
   return (
-    <div className="mb-8 rounded-2xl border border-white/10 bg-card p-4 sm:p-6" data-testid="event-calendar">
+    <div className="mb-6 rounded-2xl border border-white/10 bg-card p-4 sm:p-6" data-testid="event-calendar">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link
           href={eventsPath({ month: previous.key })}
@@ -45,15 +48,14 @@ export default function MonthCalendar({
           <ChevronLeft size={18} />
         </Link>
         <div className="text-center">
-          <p className="text-lg font-semibold">{title}</p>
+          <p className="font-display text-lg font-semibold">{title}</p>
           {month.key === todayKey.slice(0, 7) ? (
             <p className="text-xs text-foreground/50">Dnes {formatDayLabel(todayKey)}</p>
-          ) : null}
-          {month.key !== todayKey.slice(0, 7) ? (
+          ) : (
             <Link href={eventsPath({ month: todayKey.slice(0, 7) })} className="text-xs text-primary hover:underline">
               Dnes
             </Link>
-          ) : null}
+          )}
         </div>
         <Link
           href={eventsPath({ month: next.key })}
@@ -73,7 +75,8 @@ export default function MonthCalendar({
       <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {cells.map((cell, index) => {
           if (!cell) return <div key={`empty-${index}`} aria-hidden />;
-          const count = counts[cell.key] ?? 0;
+          const dayMarkers = markers[cell.key] ?? [];
+          const count = dayMarkers.length;
           const selected = cell.key === selectedDay;
           const today = cell.key === todayKey;
           const label = [
@@ -96,24 +99,35 @@ export default function MonthCalendar({
               data-today={today ? "true" : undefined}
               data-selected={selected ? "true" : undefined}
               className={cn(
-                "relative flex aspect-square items-center justify-center rounded-lg text-sm",
-                selected ? "bg-primary font-semibold text-black" : "bg-white/5 hover:bg-white/10",
-                today && "ring-2 ring-inset ring-accent"
+                "flex min-h-[4.5rem] flex-col rounded-lg p-1.5 text-left transition sm:min-h-[5.25rem] sm:p-2",
+                selected ? "bg-primary/25 ring-2 ring-inset ring-primary" : "bg-white/5 hover:bg-white/10",
+                today && !selected && "ring-2 ring-inset ring-accent"
               )}
             >
-              {cell.day}
-              {count > 1 ? (
-                <span
-                  className={cn(
-                    "absolute bottom-1 text-[10px] font-semibold leading-none",
-                    selected ? "text-black" : "text-primary"
-                  )}
-                >
-                  {count}
-                </span>
-              ) : count === 1 ? (
-                <span className={cn("absolute bottom-1 h-1.5 w-1.5 rounded-full", selected ? "bg-black" : "bg-primary")} />
-              ) : null}
+              <span
+                className={cn(
+                  "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs",
+                  today && "bg-primary font-semibold text-white"
+                )}
+              >
+                {cell.day}
+              </span>
+              <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
+                {dayMarkers.slice(0, 2).map((marker, markerIndex) => (
+                  <span
+                    key={`${cell.key}-${markerIndex}`}
+                    className={cn(
+                      "truncate rounded px-1 py-0.5 text-[9px] font-medium leading-tight sm:text-[10px]",
+                      eventTypeStyle(marker.eventType).pill
+                    )}
+                  >
+                    {marker.title}
+                  </span>
+                ))}
+                {count > 2 ? (
+                  <span className="px-1 text-[9px] text-foreground/50">+{count - 2}</span>
+                ) : null}
+              </div>
             </Link>
           );
         })}

@@ -1,12 +1,26 @@
 import type { Metadata } from "next";
+import { DM_Sans, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileHeader from "@/components/layout/MobileHeader";
+import { BRAND_NAME } from "@/lib/brand";
 import { getCurrentUser } from "@/lib/supabase/session";
 
+const sans = DM_Sans({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const display = Space_Grotesk({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-display",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "EDH Hub – Social network for Commander players",
-  description: "EDH & cEDH social network – decks, events, strategies",
+  title: `${BRAND_NAME} – Commander komunita`,
+  description: "EDH & cEDH sociální síť – decky, eventy, články",
 };
 
 export default async function RootLayout({
@@ -17,8 +31,8 @@ export default async function RootLayout({
   const user = await getCurrentUser();
 
   return (
-    <html lang="cs">
-      <body className="min-h-screen bg-background text-foreground">
+    <html lang="cs" className={`${sans.variable} ${display.variable}`}>
+      <body className="min-h-screen bg-background font-sans text-foreground">
         <div className="flex min-h-screen">
           <Sidebar user={user} />
           <div className="min-w-0 flex-1">
