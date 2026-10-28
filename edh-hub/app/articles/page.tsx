@@ -37,15 +37,15 @@ export default async function ArticlesPage() {
 
   return (
     <div className="max-w-4xl">
-      <div className="mb-8 flex items-center justify-between gap-4">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Články</h1>
+          <h1 className="font-display text-3xl font-bold">Články</h1>
           <p className="mt-1 text-foreground/60">Delší texty, primery a návody z komunity</p>
         </div>
         {user ? (
           <Link
             href="/articles/new"
-            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black hover:bg-primary/90"
+            className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
           >
             + Nový článek
           </Link>
@@ -68,7 +68,7 @@ export default async function ArticlesPage() {
       ) : null}
 
       {live && articles.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/70">
+        <p className="rounded-xl border border-dashed border-white/15 bg-card/60 p-8 text-center text-sm text-foreground/70">
           Zatím žádné články.{" "}
           <Link href={user ? "/articles/new" : "/login?next=/articles/new"} className="text-primary hover:underline">
             Napiš první
@@ -87,24 +87,32 @@ export default async function ArticlesPage() {
 }
 
 function ArticleCard({ article, live }: { article: FeedPost; live: boolean }) {
+  const initial = article.author.slice(0, 1).toUpperCase();
+
   return (
-    <article className="rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
+    <article className="animate-fade-rise rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
       <div className="mb-3 flex items-center gap-3 text-sm text-foreground/60">
-        <div className="h-8 w-8 rounded-full bg-primary/30" />
-        {live && article.authorUsername !== "hráč" ? (
-          <Link href={`/profile/${article.authorUsername}`} className="hover:text-primary hover:underline">
-            {article.author}
-          </Link>
-        ) : (
-          <span>{article.author}</span>
-        )}
-        <span>•</span>
-        <span>{formatRelativePrague(article.createdAt)}</span>
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-xs font-semibold text-white">
+          {initial}
+        </div>
+        <div className="min-w-0">
+          {live && article.authorUsername !== "hráč" ? (
+            <Link
+              href={`/profile/${article.authorUsername}`}
+              className="font-medium text-foreground hover:text-primary hover:underline"
+            >
+              {article.author}
+            </Link>
+          ) : (
+            <span className="font-medium text-foreground">{article.author}</span>
+          )}
+          <p className="text-xs text-foreground/45">{formatRelativePrague(article.createdAt)}</p>
+        </div>
       </div>
-      <h2 className="mb-2 text-lg font-semibold">{article.title}</h2>
-      {article.excerpt && <p className="mb-4 text-sm text-foreground/70">{article.excerpt}</p>}
+      <h2 className="mb-2 font-display text-lg font-semibold">{article.title}</h2>
+      {article.excerpt && <p className="mb-4 text-sm leading-relaxed text-foreground/70">{article.excerpt}</p>}
       {live ? (
-        <Link href={`/articles/${article.id}`} className="text-xs text-primary hover:underline">
+        <Link href={`/articles/${article.id}`} className="text-xs font-medium text-primary hover:underline">
           Číst článek →
         </Link>
       ) : (
