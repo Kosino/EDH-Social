@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import { ProfilePreview } from "@/components/profile/ProfilePreview";
 import { isSuperuser } from "@/lib/admin";
+import { getMoxfieldCommanderPreviews } from "@/lib/moxfield";
 import { getProfile, getRsvpCount } from "@/lib/supabase/queries";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -25,6 +26,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           isOwner={false}
           admin={false}
           commanders={["Atraxa", "Yuriko", "Kinnan"]}
+          moxfieldCommanders={[]}
           decks={[
             { id: "1", name: "Atraxa Superfriends", format: "EDH", commander: "Atraxa", moxfieldUrl: null },
             { id: "2", name: "Yuriko Ninjas", format: "cEDH", commander: "Yuriko", moxfieldUrl: null },
@@ -67,7 +69,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const viewer = await getCurrentUser();
   const isOwner = viewer?.username === profile.username;
   const commanders = Array.from(new Set(profile.decks.map((deck) => deck.commander)));
-  const eventsJoined = await getRsvpCount(profile.id);
+  const [eventsJoined, moxfieldCommanders] = await Promise.all([
+    getRsvpCount(profile.id),
+    profile.moxfieldUserUrl
+      ? getMoxfieldCommanderPreviews({
+          moxfieldUserUrl: profile.moxfieldUserUrl,
+          localCommanders: commanders,
+        })
+      : Promise.resolve([]),
+  ]);
 
   return (
     <ProfilePreview
@@ -81,6 +91,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       isOwner={isOwner}
       admin={isSuperuser(profile.username)}
       commanders={commanders}
+      moxfieldCommanders={moxfieldCommanders}
       decks={profile.decks}
       eventsJoined={eventsJoined}
     />

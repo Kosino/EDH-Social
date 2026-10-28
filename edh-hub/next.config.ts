@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
         hostname: "dbkaununwsckijzgdvjy.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "cards.scryfall.io",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.scryfall.com",
+        pathname: "/**",
+      },
     ],
   },
   eslint: {

@@ -1,6 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import ProfileEditor from "@/components/profile/ProfileEditor";
 import UserAvatar from "@/components/profile/UserAvatar";
+import type { MoxfieldCommanderPreview } from "@/lib/moxfield";
 import type { ProfileDeck } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +17,7 @@ export function ProfilePreview({
   isOwner,
   admin,
   commanders,
+  moxfieldCommanders,
   decks,
   eventsJoined,
 }: {
@@ -28,9 +31,11 @@ export function ProfilePreview({
   isOwner: boolean;
   admin: boolean;
   commanders: string[];
+  moxfieldCommanders: MoxfieldCommanderPreview[];
   decks: ProfileDeck[];
   eventsJoined: number;
 }) {
+  const showMoxfieldCommanders = Boolean(moxfieldUserUrl) && moxfieldCommanders.length > 0;
   return (
     <div className="max-w-5xl">
       <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-card">
@@ -84,19 +89,45 @@ export function ProfilePreview({
 
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-white/10 bg-card p-5">
-          <h2 className="mb-4 font-display text-lg font-semibold">Oblíbení commandři</h2>
-          {commanders.length === 0 ? (
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <h2 className="font-display text-lg font-semibold">
+              {showMoxfieldCommanders ? "Commandři z Moxfieldu" : "Oblíbení commandři"}
+            </h2>
+            {moxfieldUserUrl ? (
+              <a
+                href={moxfieldUserUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                Profil na Moxfieldu
+              </a>
+            ) : null}
+          </div>
+          {showMoxfieldCommanders ? (
+            <div className="grid grid-cols-3 gap-3">
+              {moxfieldCommanders.map((commander, index) => (
+                <MoxfieldCommanderCard key={`${commander.name}-${index}`} commander={commander} tone={index % 3} />
+              ))}
+            </div>
+          ) : commanders.length === 0 ? (
             <p className="rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-5 text-sm text-foreground/60">
-              Zatím žádní commandři.
-              {isOwner ? (
+              {moxfieldUserUrl ? (
                 <>
-                  {" "}
+                  Moxfield je propojený, ale náhled commanderů teď nedostupný (API / žádné decky). Zkus obnovit
+                  stránku, nebo přidej decky v EDH Social.
+                </>
+              ) : isOwner ? (
+                <>
+                  Přidej Moxfield odkaz v úpravě profilu — zobrazí se náhledy commanderů z tvých decků. Nebo{" "}
                   <Link href="/decks/new" className="text-primary hover:underline">
-                    Přidej deck
+                    přidej deck
                   </Link>
                   .
                 </>
-              ) : null}
+              ) : (
+                "Zatím žádní commandři."
+              )}
             </p>
           ) : (
             <div className="grid grid-cols-3 gap-3">
@@ -167,9 +198,59 @@ function CommanderCard({ commander, tone }: { commander: string; tone: number })
     <div className="animate-fade-rise">
       <div className={cn("mb-2 aspect-[63/88] rounded-lg bg-gradient-to-b", TONES[tone] ?? TONES[0])} />
       <p className="truncate text-center text-sm font-medium">{commander}</p>
-      <p className="text-center text-[10px] text-foreground/40">Placeholder</p>
     </div>
   );
+}
+
+function MoxfieldCommanderCard({
+  commander,
+  tone,
+}: {
+  commander: MoxfieldCommanderPreview;
+  tone: number;
+}) {
+  const body = (
+    <>
+      <div
+        className={cn(
+          "relative mb-2 aspect-[63/88] overflow-hidden rounded-lg bg-gradient-to-b",
+          TONES[tone] ?? TONES[0]
+        )}
+      >
+        {commander.imageUrl ? (
+          <Image
+            src={commander.imageUrl}
+            alt={commander.name}
+            fill
+            className="object-cover object-top"
+            sizes="120px"
+            unoptimized
+          />
+        ) : null}
+      </div>
+      <p className="truncate text-center text-sm font-medium">{commander.name}</p>
+      {commander.deckName ? (
+        <p className="truncate text-center text-[10px] text-foreground/45">{commander.deckName}</p>
+      ) : (
+        <p className="text-center text-[10px] text-foreground/40">Moxfield</p>
+      )}
+    </>
+  );
+
+  if (commander.deckUrl) {
+    return (
+      <a
+        href={commander.deckUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="animate-fade-rise block transition hover:opacity-90"
+      >
+        {body}
+      </a>
+    );
+  }
+
+  return <div className="animate-fade-rise">{body}</div>;
 }
 
 function DeckCard({ deck, tone }: { deck: ProfileDeck; tone: number }) {
