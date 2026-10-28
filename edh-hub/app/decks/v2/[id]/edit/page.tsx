@@ -3,11 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import AddCardForm from "@/components/deckbuilder/AddCardForm";
 import DeckCardTile from "@/components/deckbuilder/DeckCardTile";
+import DeckStatsPanel from "@/components/deckbuilder/DeckStatsPanel";
 import ImportDecklistForm from "@/components/deckbuilder/ImportDecklistForm";
 import RemoveCardButton from "@/components/deckbuilder/RemoveCardButton";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { evaluateDeckLegality } from "@/lib/deckbuilder/legality";
 import { getDeckV2 } from "@/lib/deckbuilder/queries";
+import { computeDeckStats } from "@/lib/deckbuilder/stats";
 import { getCurrentUser } from "@/lib/supabase/session";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,10 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(`/decks/v2/${id}/edit`)}`);
 
-  const importOn = await isFeatureEnabled("deckbuilder_import");
+  const [importOn, statsOn] = await Promise.all([
+    isFeatureEnabled("deckbuilder_import"),
+    isFeatureEnabled("deckbuilder_stats"),
+  ]);
   const result = await getDeckV2(id);
   if (result.status === "error") {
     return (
@@ -47,6 +52,18 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
     })),
   });
   const illegal = new Map(report.cards.map((c) => [c.name.toLowerCase(), c]));
+  const stats = statsOn
+    ? computeDeckStats(
+        deck.cards.map((c) => ({
+          name: c.name,
+          quantity: c.quantity,
+          board: c.board,
+          manaCost: c.manaCost,
+          typeLine: c.typeLine,
+          isBasicLand: c.isBasicLand,
+        }))
+      )
+    : null;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -73,6 +90,7 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
               <code className="text-foreground/60">feature_flags</code>.
             </p>
           )}
+          {stats ? <DeckStatsPanel stats={stats} /> : null}
         </div>
         <div className="space-y-3">
           {report.issues.length > 0 ? (

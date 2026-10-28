@@ -27,3 +27,7 @@
 
 - Přímý fetch Moxfield deck URL (API často Cloudflare-blocked)
 - Import z profile Moxfield user URL
+
+## Next
+
+- Modul 03 — `modules/03-deck-stats.md` (`deckbuilder_stats`)

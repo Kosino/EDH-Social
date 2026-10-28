@@ -46,11 +46,12 @@ Nebo jedním pastem: `supabase/migrations/20261028160000_part2_bundle.sql` (krok
 5. `supabase/migrations/20261028170000_profile_avatars.sql` (avatar_key / avatar_url / moxfield_user_url + Storage bucket `avatars`)
 6. `supabase/migrations/20261029120000_taverna_u_kosa.sql` (Taverna: `decks_v2`, `deck_cards`, feature flags)
 7. `supabase/migrations/20261029130000_enable_deckbuilder_import.sql` (flag `deckbuilder_import`)
+8. `supabase/migrations/20261029140000_enable_deckbuilder_stats.sql` (flag `deckbuilder_stats`)
 
 ## Taverna u Kosa (deckbuilder)
 
-- Docs: `architecture/`, `modules/01-core-deck-crud.md`
-- Feature flags: `deckbuilder_core`, `deckbuilder_import` (tabulka `feature_flags`)
+- Docs: `architecture/`, `modules/01-core-deck-crud.md`, `modules/02-moxfield-import.md`, `modules/03-deck-stats.md`
+- Feature flags: `deckbuilder_core`, `deckbuilder_import`, `deckbuilder_stats` (tabulka `feature_flags`)
 - Routes: `/taverna`, `/taverna/deckbuilder`, `/taverna/deckbuilder/import`, `/decks/new`, `/decks/v2/[id]`, `/decks/v2/[id]/edit`
 - Legacy `public.decks` beze změny
 
