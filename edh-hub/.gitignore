@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+tsconfig.tsbuildinfo
+.env
+.env*.local
+# Publishable client key only. Service-role keys stay untracked.
+!.env.local
+npm-debug.log*

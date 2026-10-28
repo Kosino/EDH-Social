@@ -6,6 +6,9 @@ Prototyp sociální sítě pro hráče Magic: The Gathering (EDH / cEDH).
 - Next.js (App Router) + TypeScript + Tailwind
 - Tmavý layout s postranním panelem (podle návrhu)
 - Základní stránky: Feed, Profil, Kalendář eventů
+- Supabase klient (`@supabase/ssr`), přihlášení, registrace a odhlášení
+- Formuláře pro příspěvek, deck a event (vyžadují přihlášení)
+- SQL migrace pro `profiles`, `posts`, `decks`, `events`, `event_rsvps`
 - Žádné oficiální artworky Magic karet (pouze placeholdery)
 
 ## Spuštění v Cursoru
@@ -21,16 +24,27 @@ Prototyp sociální sítě pro hráče Magic: The Gathering (EDH / cEDH).
 
 ## Další kroky (s Grokem v Cursoru)
 
-1. Napojit Supabase (auth + databáze)
-2. Vytvořit formuláře pro decky, posty a eventy
-3. Přidat reálný kalendář (např. react-big-calendar)
-4. Přidat autentizaci
+1. Dokončit napojení Supabase: v SQL editoru spustit migraci (klíč už je v `.env.local`)
+2. Přidat reálný kalendář (např. react-big-calendar)
+
+## Admin
+
+Účet `kosino` (jan.kos.aiswarm@gmail.com) je super user a admin projektu. Přihlašovací jméno je `kosino`, zobrazované jméno je Kosino. Heslo v repozitáři není. Další testování používá tento účet. Přihlášení začne fungovat až po potvrzení e-mailu.
 
 ## Autorská práva
 Projekt záměrně neobsahuje žádné oficiální obrázky karet, logo Wizards of the Coast ani jiné chráněné materiály. Všechny vizuály jsou generické placeholdery.
 
 ## Environment
-Zkopíruj `.env.example` → `.env.local` a doplň klíče ze Supabase (až budeš mít projekt).
+`.env.local` je v repozitáři a obsahuje URL projektu a publishable klíč. Service-role klíč sem nepatří.
+
+V SQL editoru spusť `supabase/migrations/20261028100000_init.sql`.
+
+V Authentication → URL Configuration nastav přesně tyto adresy (ne `0.0.0.0`, tu prohlížeč neotevře):
+
+- Site URL: `http://localhost:3000`
+- Redirect URLs: `http://localhost:3000/auth/callback`
+
+Bez klíče aplikace dál ukazuje ukázková data. S klíčem feed, profily a seznam eventů čtou tabulky. Dokud migrace neproběhne, stránky ukážou, že tabulky chybí.
 
 ---
 
