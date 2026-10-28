@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSupabaseEnv } from "@/lib/supabase/env";
-import { safeNext } from "@/lib/redirect";
+import { browserOrigin, safeNext } from "@/lib/redirect";
 
 const USERNAME = /^[A-Za-z0-9_]{3,20}$/;
 
@@ -96,7 +96,7 @@ export async function signup(formData: FormData) {
     redirectWith("/signup", "error", "Tohle uživatelské jméno už někdo používá.", next);
   }
 
-  const origin = (await headers()).get("origin") ?? "http://localhost:3000";
+  const origin = browserOrigin((await headers()).get("origin"));
   const { data, error } = await supabase.auth.signUp({
     email,
     password,

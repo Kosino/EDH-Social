@@ -39,7 +39,7 @@ Projekt záměrně neobsahuje žádné oficiální obrázky karet, logo Wizards 
 
 V SQL editoru spusť `supabase/migrations/20261028100000_init.sql`.
 
-V Authentication → URL Configuration nastav:
+V Authentication → URL Configuration nastav přesně tyto adresy (ne `0.0.0.0`, tu prohlížeč neotevře):
 
 - Site URL: `http://localhost:3000`
 - Redirect URLs: `http://localhost:3000/auth/callback`
