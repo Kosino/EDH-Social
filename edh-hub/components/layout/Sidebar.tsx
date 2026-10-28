@@ -2,7 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Newspaper, User, Calendar, BookOpen, Plus, LogIn, LogOut, Shield } from "lucide-react";
+import {
+  Home,
+  Newspaper,
+  User,
+  Calendar,
+  BookOpen,
+  Plus,
+  LogIn,
+  LogOut,
+  Shield,
+  Beer,
+  Layers,
+} from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import TreeMark from "@/components/brand/TreeMark";
 import { isSuperuser, publicName } from "@/lib/admin";
@@ -14,6 +26,10 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
   const pathname = usePathname();
   const profileHref = user?.username ? `/profile/${user.username}` : null;
   const showAdmin = isSuperuser(user?.username);
+  const tavernaOpen =
+    pathname.startsWith("/taverna") ||
+    pathname.startsWith("/decks/new") ||
+    pathname.startsWith("/decks/v2");
 
   return (
     <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-card p-6 md:flex">
@@ -57,6 +73,29 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
           label="Články"
           active={pathname.startsWith("/articles")}
         />
+
+        <NavItem
+          href="/taverna"
+          icon={<Beer size={18} />}
+          label="Taverna"
+          active={pathname === "/taverna"}
+        />
+        {tavernaOpen ? (
+          <div className="ml-4 space-y-1 border-l border-white/10 pl-2">
+            <NavItem
+              href="/taverna/deckbuilder"
+              icon={<Layers size={16} />}
+              label="Deckbuilder"
+              active={
+                pathname.startsWith("/taverna/deckbuilder") ||
+                pathname.startsWith("/decks/new") ||
+                pathname.startsWith("/decks/v2")
+              }
+              compact
+            />
+          </div>
+        ) : null}
+
         {showAdmin ? (
           <NavItem
             href="/admin"
@@ -127,17 +166,20 @@ function NavItem({
   icon,
   label,
   active,
+  compact,
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
   active?: boolean;
+  compact?: boolean;
 }) {
   return (
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition",
+        "flex items-center gap-3 rounded-lg text-sm transition",
+        compact ? "px-2.5 py-2" : "px-3 py-2.5",
         active
           ? "bg-primary/20 font-medium text-primary"
           : "text-foreground/80 hover:bg-white/5 hover:text-foreground"

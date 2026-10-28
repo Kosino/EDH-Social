@@ -29,6 +29,52 @@ function mapCard(row: Record<string, unknown>): DeckV2Card {
   };
 }
 
+export type DeckV2ListItem = {
+  id: string;
+  name: string;
+  format: DeckFormat;
+  commanderName: string;
+  updatedAt: string;
+  cardCount: number;
+};
+
+export async function listMyDecksV2(ownerId: string): Promise<QueryResult<DeckV2ListItem[]>> {
+  if (!getSupabaseEnv()) return { status: "unconfigured" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("decks_v2")
+    .select("id, name, format, commander_name, updated_at, deck_cards(quantity)")
+    .eq("owner_id", ownerId)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    if (error.code === "PGRST205" || error.message?.includes("decks_v2")) {
+      return {
+        status: "error",
+        message:
+          "Chybí tabulky Taverny. V Supabase SQL editoru spusť supabase/migrations/20261029120000_taverna_u_kosa.sql.",
+      };
+    }
+    return failure(error);
+  }
+
+  const items: DeckV2ListItem[] = (data ?? []).map((row) => {
+    const cards = row.deck_cards as { quantity?: number }[] | null;
+    const cardCount = (cards ?? []).reduce((sum, c) => sum + (Number(c.quantity) || 0), 0);
+    return {
+      id: row.id as string,
+      name: row.name as string,
+      format: row.format as DeckFormat,
+      commanderName: row.commander_name as string,
+      updatedAt: row.updated_at as string,
+      cardCount,
+    };
+  });
+
+  return { status: "ok", data: items };
+}
+
 export async function getDeckV2(id: string): Promise<QueryResult<DeckV2 | null>> {
   if (!getSupabaseEnv()) return { status: "unconfigured" };
 
