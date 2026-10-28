@@ -20,7 +20,7 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
         <NavItem href="/" icon={<Home size={18} />} label="Feed" />
         <NavItem href={profileHref} icon={<User size={18} />} label="Profil" />
         <NavItem href="/events" icon={<Calendar size={18} />} label="Eventy" />
-        <NavItem href="/feed" icon={<BookOpen size={18} />} label="Články" />
+        <NavItem href="/" icon={<BookOpen size={18} />} label="Články" />
       </nav>
 
       <div className="mt-8 space-y-3">
