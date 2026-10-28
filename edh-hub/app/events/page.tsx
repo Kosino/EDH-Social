@@ -6,15 +6,48 @@ import { toggleRsvp } from "@/app/create/actions";
 import { eventsPath, formatDayLabel, pragueDateKey, pragueMonthRange, resolveCalendarQuery } from "@/lib/calendar";
 import { getEventsInRange, getMyRsvpEventIds, getUpcomingEvents, type HubEvent, type QueryResult } from "@/lib/supabase/queries";
 import { getCurrentUser } from "@/lib/supabase/session";
-import { formatEventDate } from "@/lib/utils";
+import { formatEventDate, pragueLocalToUtc } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const samples: HubEvent[] = [
-  { id: "1", startsAt: "2026-05-16T18:00:00.000Z", title: "cEDH Tournament", eventType: "Competitive", location: "Most" },
-  { id: "2", startsAt: "2026-05-18T18:00:00.000Z", title: "Friday Night EDH", eventType: "Casual", location: "Bílina" },
-  { id: "3", startsAt: "2026-05-22T18:00:00.000Z", title: "Casual Pod", eventType: "Casual", location: null },
-];
+function sampleEventsAround(now = new Date()): HubEvent[] {
+  const today = pragueDateKey(now);
+  if (!today) return [];
+  const [y, m, d] = today.split("-").map(Number);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const dayOffset = (offset: number) => {
+    const base = new Date(Date.UTC(y, m - 1, d + offset));
+    return `${base.getUTCFullYear()}-${pad(base.getUTCMonth() + 1)}-${pad(base.getUTCDate())}`;
+  };
+  const at = (key: string, hour: string) => {
+    const instant = pragueLocalToUtc(`${key}T${hour}`);
+    return instant?.toISOString() ?? `${key}T${hour}:00.000Z`;
+  };
+
+  return [
+    {
+      id: "sample-1",
+      startsAt: at(dayOffset(2), "18:00"),
+      title: "cEDH Tournament",
+      eventType: "Competitive",
+      location: "Most",
+    },
+    {
+      id: "sample-2",
+      startsAt: at(dayOffset(4), "19:00"),
+      title: "Friday Night EDH",
+      eventType: "Casual",
+      location: "Bílina",
+    },
+    {
+      id: "sample-3",
+      startsAt: at(dayOffset(9), "20:00"),
+      title: "Online Casual Pod",
+      eventType: "Online",
+      location: "Discord",
+    },
+  ];
+}
 
 function textParam(value: string | string[] | undefined) {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -54,6 +87,7 @@ export default async function EventsPage({
       : Promise.resolve({ status: "error" as const, message: "Kalendář se nepodařilo sestavit." }),
   ]);
 
+  const samples = sampleEventsAround();
   const offline = upcomingResult.status !== "ok" && monthResult.status !== "ok";
   const sampleMonth = samples.filter((event) => pragueDateKey(event.startsAt).startsWith(view.month.key));
   const monthEvents = monthResult.status === "ok" ? monthResult.data : offline ? sampleMonth : [];
@@ -72,13 +106,16 @@ export default async function EventsPage({
     const key = pragueDateKey(event.startsAt);
     counts[key] = (counts[key] ?? 0) + 1;
   }
+  const monthHasEvents = monthEvents.length > 0;
 
   return (
     <div className="max-w-6xl">
       <div className="mb-8 flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Kalendář eventů</h1>
-          <p className="mt-1 text-foreground/60">Turnaje, casual setkání a online pody</p>
+          <p className="mt-1 text-foreground/60">
+            Turnaje, casual setkání a online pody · časy v Europe/Prague
+          </p>
         </div>
         <Link href="/events/new" className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-black hover:bg-accent/90">
           + Vytvořit event
@@ -92,24 +129,43 @@ export default async function EventsPage({
         counts={counts}
       />
 
+      {!monthHasEvents && listIsLive ? (
+        <p className="mb-6 text-sm text-foreground/50">
+          V tomto měsíci zatím nejsou žádné eventy.{" "}
+          <Link href="/events/new" className="text-primary hover:underline">
+            Přidej první
+          </Link>
+          .
+        </p>
+      ) : null}
+
       {noticesFor([upcomingResult, monthResult], errorParam).map((message) => (
         <DataNotice key={message} message={message} />
       ))}
+      {offline && upcomingResult.status === "unconfigured" ? (
+        <DataNotice message="Supabase ještě není nastavené. Níže je náhled kalendáře." />
+      ) : null}
 
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">{view.day ? formatDayLabel(view.day) : "Nadcházející"}</h2>
         {view.day ? (
           <Link href={eventsPath({ month: view.month.key })} className="shrink-0 text-sm text-primary hover:underline">
-            Zrušit výběr
+            Zrušit výběr dne
           </Link>
         ) : null}
       </div>
 
       {listed.length === 0 ? (
         view.day ? (
-          <p className="text-sm text-foreground/60">V tento den není žádný event.</p>
+          <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/60">
+            V tento den není žádný event.{" "}
+            <Link href="/events/new" className="text-primary hover:underline">
+              Vytvoř event
+            </Link>
+            .
+          </p>
         ) : (
-          <p className="text-sm text-foreground/60">
+          <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/60">
             Žádné nadcházející eventy.{" "}
             <Link href="/events/new" className="text-primary hover:underline">
               Vytvoř první
@@ -158,7 +214,14 @@ function EventItem({
     <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-card p-4">
       <div>
         <p className="text-xs text-foreground/50">{formatEventDate(event.startsAt)}</p>
-        <h3 className="font-medium">{event.title}</h3>
+        <h3 className="font-medium">
+          {event.title}
+          {joined ? (
+            <span className="ml-2 align-middle rounded bg-primary/20 px-2 py-0.5 text-xs font-normal text-primary">
+              Jdeš
+            </span>
+          ) : null}
+        </h3>
         {event.location && <p className="text-sm text-foreground/60">{event.location}</p>}
         <span className="mt-1 inline-block rounded bg-white/10 px-2 py-0.5 text-xs">{event.eventType}</span>
       </div>
@@ -168,7 +231,7 @@ function EventItem({
           <input type="hidden" name="month" value={monthKey} />
           {dayKey ? <input type="hidden" name="day" value={dayKey} /> : null}
           <button className="rounded-lg border border-primary px-4 py-1.5 text-sm text-primary hover:bg-primary/10">
-            {joined ? "Jdu" : "Přidat se"}
+            {joined ? "Odhlásit" : "Přidat se"}
           </button>
         </form>
       ) : (

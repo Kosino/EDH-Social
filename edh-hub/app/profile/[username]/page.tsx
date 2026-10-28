@@ -73,7 +73,18 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       <section className="mb-10">
         <h2 className="mb-4 text-xl font-semibold">Oblíbení commandři</h2>
         {commanders.length === 0 ? (
-          <p className="text-sm text-foreground/60">Zatím žádné decky.</p>
+          <p className="text-sm text-foreground/60">
+            Zatím žádní commandři.
+            {isOwner ? (
+              <>
+                {" "}
+                <Link href="/decks/new" className="text-primary hover:underline">
+                  Přidej deck
+                </Link>
+                .
+              </>
+            ) : null}
+          </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {commanders.map((commander) => (
@@ -97,7 +108,19 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           )}
         </div>
         {profile.decks.length === 0 ? (
-          <p className="text-sm text-foreground/60">Žádné veřejné decky.</p>
+          <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/60">
+            {isOwner ? (
+              <>
+                Zatím žádné decky.{" "}
+                <Link href="/decks/new" className="text-primary hover:underline">
+                  Vytvoř první
+                </Link>
+                .
+              </>
+            ) : (
+              "Žádné veřejné decky."
+            )}
+          </p>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {profile.decks.map((deck) => (
@@ -113,14 +136,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 function DemoProfile({ username }: { username: string }) {
   return (
     <div className="max-w-5xl">
+      <DataNotice message="Supabase ještě není nastavené. Níže je jen náhled profilu." />
       <div className="mb-8 rounded-2xl border border-white/10 bg-card p-6">
         <div className="flex items-start gap-5">
           <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary to-accent" />
           <div className="flex-1">
             <h1 className="text-3xl font-bold">{username}</h1>
-            <p className="mt-1 text-foreground/70">EDH Enthusiast • Deck Builder</p>
+            <p className="mt-1 text-foreground/70">EDH nadšenec • Deck builder</p>
             <p className="mt-3 max-w-xl text-sm text-foreground/60">
-              Exploring the multiverse one deck at a time. Building thematic high-synergy EDH decks.
+              Procházím multivesmír deck po decku. Stavím tematické EDH listy s vysokou synergií.
             </p>
           </div>
         </div>
@@ -166,8 +190,13 @@ function DeckCard({ deck }: { deck: ProfileDeck }) {
       <h3 className="font-semibold">{deck.name}</h3>
       <p className="mt-1 text-sm text-foreground/60">{deck.commander}</p>
       {deck.moxfieldUrl ? (
-        <a href={deck.moxfieldUrl} className="mt-4 inline-block text-sm text-primary hover:underline">
-          View on Moxfield →
+        <a
+          href={deck.moxfieldUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-block text-sm text-primary hover:underline"
+        >
+          Otevřít na Moxfield →
         </a>
       ) : (
         <p className="mt-4 text-sm text-foreground/40">Bez odkazu na Moxfield</p>

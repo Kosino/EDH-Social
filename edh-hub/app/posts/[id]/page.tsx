@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import { getPost } from "@/lib/supabase/queries";
 import { formatRelativePrague } from "@/lib/utils";
@@ -21,6 +21,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
   if (result.status !== "ok" || !result.data) notFound();
 
+  if (result.data.kind === "article") {
+    redirect(`/articles/${result.data.id}`);
+  }
+
   const post = result.data;
 
   return (
@@ -30,7 +34,13 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       </Link>
       <div className="mb-6 mt-4 flex items-center gap-3 text-sm text-foreground/60">
         <div className="h-8 w-8 rounded-full bg-primary/30" />
-        <span>{post.author}</span>
+        {post.authorUsername !== "hráč" ? (
+          <Link href={`/profile/${post.authorUsername}`} className="hover:text-primary hover:underline">
+            {post.author}
+          </Link>
+        ) : (
+          <span>{post.author}</span>
+        )}
         <span>•</span>
         <span>{formatRelativePrague(post.createdAt)}</span>
       </div>

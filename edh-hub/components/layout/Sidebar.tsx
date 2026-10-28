@@ -1,26 +1,46 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Home, User, Calendar, BookOpen, Plus, LogIn, LogOut } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import { publicName } from "@/lib/admin";
 import type { SessionUser } from "@/lib/supabase/session";
+import { cn } from "@/lib/utils";
 
 export default function Sidebar({ user }: { user: SessionUser | null }) {
+  const pathname = usePathname();
   const profileHref = user?.username ? `/profile/${user.username}` : "/profile/me";
 
   return (
     <aside className="hidden min-h-screen w-64 border-r border-white/10 bg-card p-6 md:block">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-primary">EDH Hub</h1>
-        <p className="mt-1 text-xs text-muted-foreground">Commander Social</p>
+        <Link href="/" className="block">
+          <h1 className="text-2xl font-bold text-primary">EDH Hub</h1>
+          <p className="mt-1 text-xs text-muted-foreground">Commander Social</p>
+        </Link>
       </div>
 
       <nav className="space-y-1">
-        <NavItem href="/" icon={<Home size={18} />} label="Feed" />
-        <NavItem href={profileHref} icon={<User size={18} />} label="Profil" />
-        <NavItem href="/events" icon={<Calendar size={18} />} label="Eventy" />
-        <NavItem href="/" icon={<BookOpen size={18} />} label="Články" />
+        <NavItem href="/" icon={<Home size={18} />} label="Feed" active={pathname === "/"} />
+        <NavItem
+          href={profileHref}
+          icon={<User size={18} />}
+          label="Profil"
+          active={pathname.startsWith("/profile")}
+        />
+        <NavItem
+          href="/events"
+          icon={<Calendar size={18} />}
+          label="Eventy"
+          active={pathname.startsWith("/events")}
+        />
+        <NavItem
+          href="/articles"
+          icon={<BookOpen size={18} />}
+          label="Články"
+          active={pathname.startsWith("/articles")}
+        />
       </nav>
 
       <div className="mt-8 space-y-3">
@@ -57,11 +77,26 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
   );
 }
 
-function NavItem({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+function NavItem({
+  href,
+  icon,
+  label,
+  active,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+}) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground/80 transition hover:bg-white/5 hover:text-foreground"
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition",
+        active
+          ? "bg-white/10 text-foreground"
+          : "text-foreground/80 hover:bg-white/5 hover:text-foreground"
+      )}
     >
       {icon}
       {label}

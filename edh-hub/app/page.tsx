@@ -10,7 +10,9 @@ const samples: FeedPost[] = [
     excerpt: "Rozbor combů, mulligan strategie a proč je deck konzistentní i v roce 2026.",
     body: null,
     deckName: "Kinnan, Bonder Prodigy",
+    kind: "post",
     author: "AetherMaster",
+    authorUsername: "aethermaster",
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -19,26 +21,42 @@ const samples: FeedPost[] = [
     excerpt: "ETB abuse, recursion a top-end bombs. Curve, synergie a budget swapy.",
     body: null,
     deckName: "Henzie",
+    kind: "post",
     author: "Elf_Brewer",
+    authorUsername: "elf_brewer",
     createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
 export default async function Home() {
   const result = await getFeedPosts();
-  const posts = result.status === "ok" ? result.data : samples;
   const live = result.status === "ok";
+  const posts = live ? result.data : samples;
 
   return (
     <div className="max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Feed</h1>
-        <p className="mt-1 text-foreground/60">Nejnovější příspěvky z komunity EDH</p>
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Feed</h1>
+          <p className="mt-1 text-foreground/60">Nejnovější příspěvky z komunity EDH</p>
+        </div>
+        <Link
+          href="/posts/new"
+          className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-black hover:bg-primary/90"
+        >
+          + Nový příspěvek
+        </Link>
       </div>
 
       {result.status === "error" && <DataNotice message={result.message} />}
+      {result.status === "unconfigured" && (
+        <DataNotice message="Supabase ještě není nastavené. Níže je jen náhled feedu." />
+      )}
+      {!live && result.status === "error" ? (
+        <p className="mb-4 text-sm text-foreground/50">Zatím ukazujeme ukázkové příspěvky.</p>
+      ) : null}
 
-      {posts.length === 0 ? (
+      {live && posts.length === 0 ? (
         <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/70">
           Zatím tu nic není.{" "}
           <Link href="/posts/new" className="text-primary hover:underline">
@@ -62,7 +80,13 @@ function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
     <article className="rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
       <div className="mb-3 flex items-center gap-3 text-sm text-foreground/60">
         <div className="h-8 w-8 rounded-full bg-primary/30" />
-        <span>{post.author}</span>
+        {live && post.authorUsername !== "hráč" ? (
+          <Link href={`/profile/${post.authorUsername}`} className="hover:text-primary hover:underline">
+            {post.author}
+          </Link>
+        ) : (
+          <span>{post.author}</span>
+        )}
         <span>•</span>
         <span>{formatRelativePrague(post.createdAt)}</span>
       </div>
