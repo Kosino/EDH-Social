@@ -2,8 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import DeckCardTile from "@/components/deckbuilder/DeckCardTile";
+import DeckStatsPanel from "@/components/deckbuilder/DeckStatsPanel";
+import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { evaluateDeckLegality } from "@/lib/deckbuilder/legality";
 import { getDeckV2 } from "@/lib/deckbuilder/queries";
+import { computeDeckStats } from "@/lib/deckbuilder/stats";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { cn, formatRelativePrague } from "@/lib/utils";
 
@@ -11,7 +14,8 @@ export const dynamic = "force-dynamic";
 
 export default async function DeckV2DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const result = await getDeckV2(id);
+  const [result, statsOn] = await Promise.all([getDeckV2(id), isFeatureEnabled("deckbuilder_stats")]);
+
 
   if (result.status === "error") {
     return (
@@ -45,6 +49,18 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
     })),
   });
   const illegal = new Map(report.cards.map((c) => [c.name.toLowerCase(), c]));
+  const stats = statsOn
+    ? computeDeckStats(
+        deck.cards.map((c) => ({
+          name: c.name,
+          quantity: c.quantity,
+          board: c.board,
+          manaCost: c.manaCost,
+          typeLine: c.typeLine,
+          isBasicLand: c.isBasicLand,
+        }))
+      )
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -91,6 +107,12 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
           </ul>
         ) : null}
       </section>
+
+      {stats ? (
+        <div className="mb-8">
+          <DeckStatsPanel stats={stats} />
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {deck.cards.map((card) => {

@@ -15,15 +15,18 @@
 ## Feature flags
 
 - Tabulka `feature_flags`, helper `lib/deckbuilder/feature-flags.ts`.
-- Klíč Modul 01: `deckbuilder_core`.
+- Klíče: `deckbuilder_core`, `deckbuilder_import`, `deckbuilder_stats`.
 
-## Routy (Modul 01)
+## Routy
 
 | Route | Účel |
 | --- | --- |
 | `/decks/new` | Create (flag → Taverna / legacy) |
-| `/decks/v2/[id]` | Detail + legality report |
-| `/decks/v2/[id]/edit` | Editor (add/remove cards) |
+| `/decks/v2/[id]` | Detail + legality (+ stats za flagem) |
+| `/decks/v2/[id]/edit` | Editor (add/remove/import + stats) |
+| `/taverna` | Taverna hub |
+| `/taverna/deckbuilder` | Deckbuilder dashboard |
+| `/taverna/deckbuilder/import` | Import decklistu |
 
 ## Scryfall
 
