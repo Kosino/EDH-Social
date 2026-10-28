@@ -1,3 +1,5 @@
+import { getScryfallImage } from "@/lib/scryfall";
+
 export type MoxfieldCommanderPreview = {
   name: string;
   imageUrl: string | null;
@@ -41,52 +43,6 @@ function imageFromCard(card: DeckListItem["mainCard"]): string | null {
   );
 }
 
-function pickScryfallImage(card: {
-  image_uris?: { normal?: string; art_crop?: string };
-  card_faces?: Array<{ image_uris?: { normal?: string; art_crop?: string } }>;
-}): string | null {
-  return (
-    card.image_uris?.normal ||
-    card.image_uris?.art_crop ||
-    card.card_faces?.[0]?.image_uris?.normal ||
-    card.card_faces?.[0]?.image_uris?.art_crop ||
-    null
-  );
-}
-
-async function scryfallImage(commanderName: string): Promise<string | null> {
-  const headers = { Accept: "application/json", "User-Agent": "EDH-Social/0.2" };
-  const revalidate = { next: { revalidate: 86400 } as const };
-
-  try {
-    const named = await fetch(
-      `https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(commanderName)}`,
-      { ...revalidate, headers }
-    );
-    if (named.ok) {
-      const card = (await named.json()) as Parameters<typeof pickScryfallImage>[0];
-      const img = pickScryfallImage(card);
-      if (img) return img;
-    }
-
-    // Ambiguous short names (e.g. "Atraxa") → prefer legendary commanders
-    const search = await fetch(
-      `https://api.scryfall.com/cards/search?q=${encodeURIComponent(
-        `${commanderName} is:commander`
-      )}&unique=cards&order=released&dir=desc`,
-      { ...revalidate, headers }
-    );
-    if (!search.ok) return null;
-    const list = (await search.json()) as {
-      data?: Array<Parameters<typeof pickScryfallImage>[0] & { name?: string }>;
-    };
-    const first = list.data?.[0];
-    return first ? pickScryfallImage(first) : null;
-  } catch {
-    return null;
-  }
-}
-
 async function fetchMoxfieldJson(url: string): Promise<unknown | null> {
   try {
     const res = await fetch(url, {
@@ -117,7 +73,9 @@ async function resolveMainCard(
   )) as { name?: string; image_uris?: { normal?: string; art_crop?: string } } | null;
   if (!data?.name) return null;
   const imageUrl =
-    data.image_uris?.normal || data.image_uris?.art_crop || (await scryfallImage(data.name));
+    data.image_uris?.normal ||
+    data.image_uris?.art_crop ||
+    (await getScryfallImage(data.name, "normal"));
   return { name: data.name, imageUrl };
 }
 
@@ -162,7 +120,7 @@ export async function getMoxfieldCommanderPreviews(opts: {
       }
 
       if (!name) continue;
-      if (!imageUrl) imageUrl = await scryfallImage(name);
+      if (!imageUrl) imageUrl = await getScryfallImage(name, "normal");
       push({
         name,
         imageUrl,
@@ -177,7 +135,7 @@ export async function getMoxfieldCommanderPreviews(opts: {
 
   // Fallback: local EDH Social commanders (caller only invokes when Moxfield URL is set)
   for (const commander of opts.localCommanders) {
-    const imageUrl = await scryfallImage(commander);
+    const imageUrl = await getScryfallImage(commander, "normal");
     push({
       name: commander,
       imageUrl,

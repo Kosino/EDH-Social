@@ -3,6 +3,7 @@ import DataNotice from "@/components/DataNotice";
 import { ProfilePreview } from "@/components/profile/ProfilePreview";
 import { isSuperuser } from "@/lib/admin";
 import { getMoxfieldCommanderPreviews } from "@/lib/moxfield";
+import { getScryfallImagesByName } from "@/lib/scryfall";
 import { getProfile, getRsvpCount } from "@/lib/supabase/queries";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -69,7 +70,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const viewer = await getCurrentUser();
   const isOwner = viewer?.username === profile.username;
   const commanders = Array.from(new Set(profile.decks.map((deck) => deck.commander)));
-  const [eventsJoined, moxfieldCommanders] = await Promise.all([
+  const [eventsJoined, moxfieldCommanders, commanderArt] = await Promise.all([
     getRsvpCount(profile.id),
     profile.moxfieldUserUrl
       ? getMoxfieldCommanderPreviews({
@@ -77,7 +78,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           localCommanders: commanders,
         })
       : Promise.resolve([]),
+    getScryfallImagesByName(
+      profile.decks.map((deck) => deck.commander),
+      "art_crop"
+    ),
   ]);
+
+  const decks = profile.decks.map((deck) => ({
+    ...deck,
+    commanderImageUrl: commanderArt.get(deck.commander.trim()) ?? null,
+  }));
 
   return (
     <ProfilePreview
@@ -92,7 +102,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       admin={isSuperuser(profile.username)}
       commanders={commanders}
       moxfieldCommanders={moxfieldCommanders}
-      decks={profile.decks}
+      decks={decks}
       eventsJoined={eventsJoined}
     />
   );

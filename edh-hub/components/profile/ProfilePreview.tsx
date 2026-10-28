@@ -256,29 +256,48 @@ function MoxfieldCommanderCard({
 function DeckCard({ deck, tone }: { deck: ProfileDeck; tone: number }) {
   const formatClass =
     deck.format === "cEDH"
-      ? "bg-primary/20 text-primary"
+      ? "bg-primary/25 text-primary"
       : tone % 2 === 0
-        ? "bg-accent/20 text-accent"
-        : "bg-casual/20 text-casual";
+        ? "bg-accent/25 text-accent"
+        : "bg-casual/25 text-casual";
 
   return (
     <Link
       href={`/decks/${deck.id}`}
-      className={cn(
-        "animate-fade-rise flex flex-col rounded-xl border border-white/10 bg-gradient-to-b p-3 transition hover:border-primary/40",
-        TONES[tone] ?? TONES[0]
-      )}
+      className="animate-fade-rise group relative flex min-h-[9.5rem] flex-col overflow-hidden rounded-xl border border-white/10 transition hover:border-primary/45"
     >
-      <span className={cn("mb-3 w-fit rounded px-2 py-0.5 text-[10px] font-medium", formatClass)}>
-        {deck.format}
-      </span>
-      <h3 className="font-display text-sm font-semibold leading-snug">{deck.name}</h3>
-      <p className="mt-1 text-xs text-foreground/60">{deck.commander}</p>
-      {deck.moxfieldUrl ? (
-        <span className="mt-auto pt-3 text-xs text-primary">Moxfield →</span>
+      {deck.commanderImageUrl ? (
+        <Image
+          src={deck.commanderImageUrl}
+          alt=""
+          fill
+          className="object-cover object-top transition duration-300 group-hover:scale-[1.03]"
+          sizes="(max-width: 640px) 100vw, 200px"
+          unoptimized
+        />
       ) : (
-        <p className="mt-auto pt-3 text-xs text-foreground/35">Bez Moxfield</p>
+        <div className={cn("absolute inset-0 bg-gradient-to-b", TONES[tone] ?? TONES[0])} />
       )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/20" />
+      <div className="relative z-10 flex h-full flex-col p-3">
+        <span
+          className={cn(
+            "mb-3 w-fit rounded px-2 py-0.5 text-[10px] font-medium backdrop-blur-sm",
+            formatClass
+          )}
+        >
+          {deck.format}
+        </span>
+        <h3 className="mt-auto font-display text-sm font-semibold leading-snug text-white drop-shadow">
+          {deck.name}
+        </h3>
+        <p className="mt-1 truncate text-xs text-white/70">{deck.commander}</p>
+        {deck.moxfieldUrl ? (
+          <span className="pt-2 text-xs text-primary">Moxfield →</span>
+        ) : (
+          <p className="pt-2 text-xs text-white/35">Bez Moxfield</p>
+        )}
+      </div>
     </Link>
   );
 }

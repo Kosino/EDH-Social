@@ -30,6 +30,8 @@ export type ProfileDeck = {
   format: string;
   commander: string;
   moxfieldUrl: string | null;
+  /** Scryfall art_crop for tile backgrounds (filled on profile page). */
+  commanderImageUrl?: string | null;
 };
 
 export type DeckView = ProfileDeck & {
