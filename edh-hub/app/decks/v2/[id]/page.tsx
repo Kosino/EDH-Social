@@ -69,7 +69,7 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
             href={`/decks/v2/${deck.id}/edit`}
             className="mt-4 inline-block rounded-lg border border-accent px-4 py-2 text-sm text-accent hover:bg-accent/10"
           >
-            Upravit deck
+            Upravit / importovat seznam
           </Link>
         ) : null}
       </header>

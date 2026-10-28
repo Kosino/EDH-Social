@@ -5,6 +5,8 @@ import { listMyDecksV2 } from "@/lib/deckbuilder/queries";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { formatRelativePrague } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export default async function DeckbuilderDashboardPage() {
   const [user, flagOn] = await Promise.all([getCurrentUser(), isFeatureEnabled("deckbuilder_core")]);
 
@@ -25,7 +27,8 @@ export default async function DeckbuilderDashboardPage() {
           <p className="text-xs font-medium uppercase tracking-wider text-accent">Taverna u Kosa</p>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Deckbuilder</h1>
           <p className="mt-2 text-sm text-foreground/55">
-            Stavěj EDH / cEDH decky, přidávej karty a sleduj legalitu.
+            Stavěj EDH / cEDH decky, přidávej karty a sleduj legalitu. Import textového listu je
+            v editoru decku (po vytvoření → Upravit).
           </p>
         </div>
         {user && flagOn ? (
