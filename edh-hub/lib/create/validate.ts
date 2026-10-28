@@ -28,6 +28,7 @@ export type EventInput = {
   eventType: EventType;
   startsAt: string;
   location: string | null;
+  description: string | null;
 };
 
 function text(value: FormDataEntryValue | null) {
@@ -104,12 +105,14 @@ export function parseDeck(formData: FormData): { ok: true; value: DeckInput } | 
 
 export function parseEvent(
   formData: FormData,
-  now = Date.now()
+  options: { now?: number; allowPast?: boolean } = {}
 ): { ok: true; value: EventInput } | { ok: false; error: string } {
+  const now = options.now ?? Date.now();
   const title = text(formData.get("title"));
   const eventType = text(formData.get("eventType"));
   const startsAtRaw = text(formData.get("startsAt"));
   const location = text(formData.get("location"));
+  const description = text(formData.get("description"));
 
   if (title.length < 1 || title.length > 160) return { ok: false, error: "Název eventu musí mít 1–160 znaků." };
   if (!isEventKind(eventType)) {
@@ -119,10 +122,13 @@ export function parseEvent(
     };
   }
   if (location.length > 160) return { ok: false, error: "Místo může mít nejvýš 160 znaků." };
+  if (description.length > 500) return { ok: false, error: "Popis může mít nejvýš 500 znaků." };
 
   const startsAt = pragueLocalToUtc(startsAtRaw);
   if (!startsAt) return { ok: false, error: "Zadej datum a čas začátku." };
-  if (startsAt.getTime() < now - 60_000) return { ok: false, error: "Event musí začínat v budoucnosti." };
+  if (!options.allowPast && startsAt.getTime() < now - 60_000) {
+    return { ok: false, error: "Event musí začínat v budoucnosti." };
+  }
 
   return {
     ok: true,
@@ -131,6 +137,7 @@ export function parseEvent(
       eventType,
       startsAt: startsAt.toISOString(),
       location: location || null,
+      description: description || null,
     },
   };
 }

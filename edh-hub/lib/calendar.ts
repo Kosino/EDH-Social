@@ -70,13 +70,20 @@ export function pragueMonthRange(month: CalendarMonth): { start: Date; end: Date
   return { start, end };
 }
 
-export function eventsPath(input: { month?: string; day?: string | null; error?: string }) {
+export function eventsPath(input: {
+  month?: string;
+  day?: string | null;
+  error?: string;
+  q?: string | null;
+}) {
   const params = new URLSearchParams();
   if (input.month && MONTH.test(input.month)) params.set("month", input.month);
   if (input.day && input.month && parseSelectedDay(input.day, resolveCalendarQuery(input.month).month)) {
     params.set("day", input.day);
   }
   if (input.error) params.set("error", input.error.slice(0, 240));
+  const q = input.q?.trim();
+  if (q) params.set("q", q.slice(0, 80));
   const query = params.toString();
   return query ? `/events?${query}` : "/events";
 }

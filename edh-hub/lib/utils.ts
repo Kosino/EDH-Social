@@ -35,6 +35,39 @@ export function formatEventDate(iso: string) {
   }).format(new Date(iso));
 }
 
+/** `datetime-local` value in Europe/Prague for edit forms. */
+export function toPragueDatetimeLocal(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: prague,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const read = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return `${read("year")}-${read("month")}-${read("day")}T${read("hour")}:${read("minute")}`;
+}
+
+/** Countdown copy for event detail (Europe/Prague wall clock). */
+export function formatEventCountdown(iso: string, now = Date.now()) {
+  const start = new Date(iso).getTime();
+  if (Number.isNaN(start)) return "";
+  const deltaMs = start - now;
+  if (deltaMs <= -60 * 60 * 1000) return "Už začalo";
+  if (deltaMs <= 0) return "Právě začíná";
+  const minutes = Math.round(deltaMs / 60_000);
+  if (minutes < 60) return `Začíná za ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Začíná za ${hours} h`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "Začíná zítra";
+  return `Začíná za ${days} dny`;
+}
+
 export function pragueDateKey(value: string | Date) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "";

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
+import { deletePost } from "@/app/create/actions";
 import { getPost } from "@/lib/supabase/queries";
+import { getCurrentUser } from "@/lib/supabase/session";
 import { formatRelativePrague } from "@/lib/utils";
 
 export default async function ArticlePage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,6 +24,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
   if (result.status !== "ok" || !result.data || result.data.kind !== "article") notFound();
 
   const article = result.data;
+  const user = await getCurrentUser();
+  const isOwner = Boolean(user && user.id === article.authorId);
   const initial = article.author.slice(0, 1).toUpperCase();
 
   return (
@@ -30,9 +34,18 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
         ← Články
       </Link>
       <div className="mb-6 mt-6 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
-          {initial}
-        </div>
+        {article.authorUsername !== "hráč" ? (
+          <Link
+            href={`/profile/${article.authorUsername}`}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30"
+          >
+            {initial}
+          </Link>
+        ) : (
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
+            {initial}
+          </div>
+        )}
         <div>
           {article.authorUsername !== "hráč" ? (
             <Link
@@ -52,6 +65,26 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
       <div className="mt-8 whitespace-pre-wrap rounded-2xl border border-white/10 bg-card p-6 text-sm leading-7 text-foreground/80 sm:p-8 sm:text-[15px]">
         {article.body || article.excerpt || "Článek nemá text."}
       </div>
+      {isOwner ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href={`/articles/${article.id}/edit`}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-foreground/80 hover:bg-white/5"
+          >
+            Upravit
+          </Link>
+          <form action={deletePost}>
+            <input type="hidden" name="postId" value={article.id} />
+            <input type="hidden" name="kind" value="article" />
+            <button
+              type="submit"
+              className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+            >
+              Smazat článek
+            </button>
+          </form>
+        </div>
+      ) : null}
     </article>
   );
 }

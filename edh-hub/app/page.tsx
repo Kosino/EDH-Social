@@ -1,7 +1,14 @@
 import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
+import SearchBar from "@/components/SearchBar";
 import { feedTopicChip } from "@/lib/brand";
-import { getFeedPosts, type FeedPost } from "@/lib/supabase/queries";
+import {
+  filterPostsByQuery,
+  getFeedPosts,
+  normalizeSearchQuery,
+  searchPosts,
+  type FeedPost,
+} from "@/lib/supabase/queries";
 import { cn, formatRelativePrague } from "@/lib/utils";
 
 const samples: FeedPost[] = [
@@ -12,6 +19,7 @@ const samples: FeedPost[] = [
     body: null,
     deckName: "Kinnan, Bonder Prodigy",
     kind: "post",
+    authorId: "sample-author-1",
     author: "AetherMaster",
     authorUsername: "aethermaster",
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
@@ -23,6 +31,7 @@ const samples: FeedPost[] = [
     body: null,
     deckName: "Henzie",
     kind: "post",
+    authorId: "sample-author-2",
     author: "Elf_Brewer",
     authorUsername: "elf_brewer",
     createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
@@ -34,20 +43,27 @@ const samples: FeedPost[] = [
     body: null,
     deckName: null,
     kind: "post",
+    authorId: "sample-author-3",
     author: "Kosino",
     authorUsername: "kosino",
     createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
-export default async function Home() {
-  const result = await getFeedPosts();
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>;
+}) {
+  const rawQ = (await searchParams).q;
+  const q = normalizeSearchQuery(Array.isArray(rawQ) ? rawQ[0] : rawQ);
+  const result = q ? await searchPosts("post", q) : await getFeedPosts();
   const live = result.status === "ok";
-  const posts = live ? result.data : samples;
+  const posts = live ? result.data : filterPostsByQuery(samples, q);
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">Feed</h1>
           <p className="mt-1 text-sm text-foreground/55">Nejnovější příspěvky z Commander komunity</p>
@@ -60,6 +76,18 @@ export default async function Home() {
         </Link>
       </div>
 
+      <div className="mb-6">
+        <SearchBar action="/" defaultValue={q} placeholder="Hledat příspěvky…" />
+        {q ? (
+          <p className="mt-2 text-xs text-foreground/50">
+            Výsledky pro „{q}“ ·{" "}
+            <Link href="/" className="text-primary hover:underline">
+              Zrušit
+            </Link>
+          </p>
+        ) : null}
+      </div>
+
       {result.status === "error" && <DataNotice message={result.message} />}
       {result.status === "unconfigured" && (
         <DataNotice message="Supabase ještě není nastavené. Níže je jen náhled feedu." />
@@ -68,13 +96,19 @@ export default async function Home() {
         <p className="mb-4 text-sm text-foreground/50">Zatím ukazujeme ukázkové příspěvky.</p>
       ) : null}
 
-      {live && posts.length === 0 ? (
+      {posts.length === 0 ? (
         <p className="rounded-xl border border-dashed border-white/15 bg-card/60 p-8 text-center text-sm text-foreground/70">
-          Zatím tu nic není.{" "}
-          <Link href="/posts/new" className="text-primary hover:underline">
-            Napiš první příspěvek
-          </Link>
-          .
+          {q ? (
+            <>Pro „{q}“ nic nenašli.</>
+          ) : (
+            <>
+              Zatím tu nic není.{" "}
+              <Link href="/posts/new" className="text-primary hover:underline">
+                Napiš první příspěvek
+              </Link>
+              .
+            </>
+          )}
         </p>
       ) : (
         <div className="space-y-4">
@@ -90,19 +124,29 @@ export default async function Home() {
 function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
   const initial = post.author.slice(0, 1).toUpperCase();
   const topic = feedTopicChip({ title: post.title, deckName: post.deckName });
+  const profileHref =
+    live && post.authorUsername !== "hráč" ? `/profile/${post.authorUsername}` : null;
+  const postHref = live ? `/posts/${post.id}` : null;
 
   return (
     <article className="animate-fade-rise rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/35">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
-          {initial}
-        </div>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30"
+            aria-label={`Profil ${post.author}`}
+          >
+            {initial}
+          </Link>
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
+            {initial}
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          {live && post.authorUsername !== "hráč" ? (
-            <Link
-              href={`/profile/${post.authorUsername}`}
-              className="truncate font-medium text-foreground hover:text-primary"
-            >
+          {profileHref ? (
+            <Link href={profileHref} className="truncate font-medium text-foreground hover:text-primary">
               {post.author}
             </Link>
           ) : (
@@ -112,7 +156,15 @@ function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
         </div>
       </div>
 
-      <h2 className="font-display text-lg font-semibold leading-snug text-foreground">{post.title}</h2>
+      {postHref ? (
+        <Link href={postHref}>
+          <h2 className="font-display text-lg font-semibold leading-snug text-foreground hover:text-primary">
+            {post.title}
+          </h2>
+        </Link>
+      ) : (
+        <h2 className="font-display text-lg font-semibold leading-snug text-foreground">{post.title}</h2>
+      )}
       {post.excerpt ? (
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-foreground/65">{post.excerpt}</p>
       ) : null}

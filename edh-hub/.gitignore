@@ -8,3 +8,4 @@ tsconfig.tsbuildinfo
 !.env.local
 npm-debug.log*
 .vercel
+.env*

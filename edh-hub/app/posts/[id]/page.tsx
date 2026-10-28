@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
+import { deletePost } from "@/app/create/actions";
 import { feedTopicChip } from "@/lib/brand";
 import { getPost } from "@/lib/supabase/queries";
+import { getCurrentUser } from "@/lib/supabase/session";
 import { cn, formatRelativePrague } from "@/lib/utils";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,6 +29,8 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   }
 
   const post = result.data;
+  const user = await getCurrentUser();
+  const isOwner = Boolean(user && user.id === post.authorId);
   const topic = feedTopicChip({ title: post.title, deckName: post.deckName });
   const initial = post.author.slice(0, 1).toUpperCase();
 
@@ -36,9 +40,18 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         ← Feed
       </Link>
       <div className="mb-6 mt-6 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
-          {initial}
-        </div>
+        {post.authorUsername !== "hráč" ? (
+          <Link
+            href={`/profile/${post.authorUsername}`}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30"
+          >
+            {initial}
+          </Link>
+        ) : (
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
+            {initial}
+          </div>
+        )}
         <div>
           {post.authorUsername !== "hráč" ? (
             <Link
@@ -67,6 +80,26 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
       <div className="mt-8 whitespace-pre-wrap rounded-2xl border border-white/10 bg-card p-6 text-sm leading-7 text-foreground/80">
         {post.body || post.excerpt || "Příspěvek nemá text."}
       </div>
+      {isOwner ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href={`/posts/${post.id}/edit`}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-foreground/80 hover:bg-white/5"
+          >
+            Upravit
+          </Link>
+          <form action={deletePost}>
+            <input type="hidden" name="postId" value={post.id} />
+            <input type="hidden" name="kind" value="post" />
+            <button
+              type="submit"
+              className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+            >
+              Smazat příspěvek
+            </button>
+          </form>
+        </div>
+      ) : null}
     </article>
   );
 }

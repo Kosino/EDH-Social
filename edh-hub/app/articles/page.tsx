@@ -12,6 +12,7 @@ const samples: FeedPost[] = [
     body: null,
     deckName: null,
     kind: "article",
+    authorId: "sample-author-3",
     author: "Kosino",
     authorUsername: "kosino",
     createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
@@ -23,6 +24,7 @@ const samples: FeedPost[] = [
     body: null,
     deckName: null,
     kind: "article",
+    authorId: "sample-author-1",
     author: "AetherMaster",
     authorUsername: "aethermaster",
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
@@ -88,19 +90,28 @@ export default async function ArticlesPage() {
 
 function ArticleCard({ article, live }: { article: FeedPost; live: boolean }) {
   const initial = article.author.slice(0, 1).toUpperCase();
+  const profileHref =
+    live && article.authorUsername !== "hráč" ? `/profile/${article.authorUsername}` : null;
 
   return (
     <article className="animate-fade-rise rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
       <div className="mb-3 flex items-center gap-3 text-sm text-foreground/60">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-xs font-semibold text-white">
-          {initial}
-        </div>
+        {profileHref ? (
+          <Link
+            href={profileHref}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-xs font-semibold text-white"
+            aria-label={`Profil ${article.author}`}
+          >
+            {initial}
+          </Link>
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-xs font-semibold text-white">
+            {initial}
+          </div>
+        )}
         <div className="min-w-0">
-          {live && article.authorUsername !== "hráč" ? (
-            <Link
-              href={`/profile/${article.authorUsername}`}
-              className="font-medium text-foreground hover:text-primary hover:underline"
-            >
+          {profileHref ? (
+            <Link href={profileHref} className="font-medium text-foreground hover:text-primary hover:underline">
               {article.author}
             </Link>
           ) : (

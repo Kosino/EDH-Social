@@ -47,6 +47,7 @@ create table if not exists public.events (
   event_type text not null check (event_type in ('cEDH Tournament', 'EDH Tournament', 'Friday Night Magic', 'Casual Pod')),
   starts_at timestamptz not null,
   location text,
+  description text check (description is null or char_length(description) <= 500),
   created_at timestamptz not null default now()
 );
 

@@ -5,13 +5,13 @@ Prototyp sociální sítě pro hráče Commander / cEDH. UI brand: **EDH Social*
 ## Co je hotové
 
 - Next.js (App Router) + TypeScript + Tailwind + Supabase Auth
-- **Feed** — příspěvky (`kind=post`), create → detail
-- **Články** — `/articles` list + detail + create (`kind=article`)
-- **Kalendář eventů** (Event calendar) — měsíční mřížka, výběr dne, RSVP; časy v `Europe/Prague`
-- **Eventy** — create (cEDH Tournament / EDH Tournament / Friday Night Magic / Casual Pod), ikony v `public/icons/`, místa (Most, Bílina, …)
+- **Feed** — příspěvky (`kind=post`), create → detail → edit/delete, search `?q=`
+- **Články** — `/articles` list + detail + create/edit/delete (`kind=article`)
+- **Kalendář eventů** (Event calendar) — měsíční mřížka s ikonami, výběr dne, RSVP; časy v `Europe/Prague`
+- **Eventy** — create/edit/detail (cEDH Tournament / EDH Tournament / Friday Night Magic / Casual Pod), ikony v `public/icons/`, popis, search
 - **Profil / bio** — guest vs owner, úprava popisu, Admin badge pro `kosino`
-- **Decky** — create + seznam na profilu (placeholder art only)
-- SQL migrace: `supabase/migrations/20261028100000_init.sql` + `20261028120000_posts_kind.sql`
+- **Decky** — create/edit/detail + Moxfield CTA na profilu (placeholder art only)
+- SQL migrace ve složce `supabase/migrations/` (viz níže)
 
 Žádné oficiální artworky Magic karet, loga Wizards ani jiné chráněné materiály.
 
@@ -37,7 +37,11 @@ Service-role klíč sem nepatří.
 V Supabase SQL editoru spusť migrace v pořadí:
 
 1. `supabase/migrations/20261028100000_init.sql`
-2. `supabase/migrations/20261028120000_posts_kind.sql` (pokud jsi init už dřív spustil bez `kind`)
+2. `supabase/migrations/20261028120000_posts_kind.sql` (pokud init běžel dřív bez `kind`)
+3. `supabase/migrations/20261028140000_event_kinds.sql` (remap Competitive/Casual/Online → 4 kinds)
+4. `supabase/migrations/20261028150000_event_description.sql` (volitelné pole `description`)
+
+Nebo jedním pastem: `supabase/migrations/20261028160000_part2_bundle.sql` (kroky 2–4).
 
 ## Supabase Auth URL Configuration
 
@@ -46,38 +50,36 @@ V Supabase SQL editoru spusť migrace v pořadí:
 - Site URL: `http://localhost:3000`
 - Redirect URLs: `http://localhost:3000/auth/callback`
 
-**Produkce (po Vercel deployi)**
+**Produkce**
 
-- Site URL: `https://<tvůj-projekt>.vercel.app`
+- Site URL: `https://edh-social.vercel.app`
 - Redirect URLs (allowlist obě):
-  - `https://<tvůj-projekt>.vercel.app/auth/callback`
+  - `https://edh-social.vercel.app/auth/callback`
   - `http://localhost:3000/auth/callback` (nech pro lokální vývoj)
 
 Nepoužívej `0.0.0.0` — prohlížeč tu adresu neotevře.
 
-## Deploy na Vercel
+## Deploy na Vercel (projekt **edh-social**)
 
-Root Directory musí být **`edh-hub`**.
+**Live:** https://edh-social.vercel.app  
+Root Directory = **`edh-hub`**. Team: `kosino`.
 
-### CLI (pokud jsi přihlášený)
+### Preferovaná cesta: GitHub → Vercel
 
-```bash
-cd edh-hub
-npx vercel link   # nebo vercel --yes při prvním deployi
-npx vercel env add NEXT_PUBLIC_SUPABASE_URL
-npx vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-npx vercel --prod
-```
+1. Root Directory `edh-hub` (už nastaveno)
+2. Env Production + Preview: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (už nastaveno)
+3. Push / merge na `main` → Production; PR branch → Preview
+4. Auth URL Configuration výše (zkontroluj v Supabase dashboardu)
 
-`vercel.json` v této složce nastavuje Next.js framework + `npm ci` / `npm run build`.
+### Cursor ↔ Vercel
 
-### Dashboard
+| Cesta | Jak |
+| --- | --- |
+| GitHub auto-deploy | Cursor pushuje do GH, Vercel poslouchá GH. |
+| CLI (přihlášený agent) | Z **kořene** repo (`/workspace`): `vercel link --yes --scope kosino --project edh-social` pak `vercel deploy --prod --yes --scope kosino` |
+| Publish / plugin | Volitelně Agents Window → Publish; u existujícího projektu preferuj Git/CLI výše |
 
-1. Import repo `Kosino/EDH-Social`
-2. Root Directory: `edh-hub`
-3. Environment variables: URL + publishable key (Production + Preview)
-4. Deploy
-5. Doplň Auth URL Configuration výše
+`edh-hub/vercel.json` nastavuje Next.js + `npm ci` / `npm run build`. Deploy z CLI musí jít z monorepo rootu, jinak Root Directory `edh-hub` neexistuje.
 
 ## Admin
 
@@ -89,4 +91,4 @@ Směr vizuálu (bez rewrite shellu): viz Project store `docs/graphics-direction.
 
 ---
 
-**Verze:** 0.2.0 (Part 1 prototype)
+**Verze:** 0.2.0 — Part 1 features hotové; Part 2 = Vercel Root `edh-hub` + Auth URLs (viz Deploy).
