@@ -6,8 +6,8 @@ import { getCurrentUser } from "@/lib/supabase/session";
 import { formatEventDate } from "@/lib/utils";
 
 const samples: HubEvent[] = [
-  { id: "1", startsAt: "2026-05-16T18:00:00.000Z", title: "cEDH Tournament", eventType: "Competitive", location: null },
-  { id: "2", startsAt: "2026-05-18T18:00:00.000Z", title: "Friday Night EDH", eventType: "Casual", location: null },
+  { id: "1", startsAt: "2026-05-16T18:00:00.000Z", title: "cEDH Tournament", eventType: "Competitive", location: "Most" },
+  { id: "2", startsAt: "2026-05-18T18:00:00.000Z", title: "Friday Night EDH", eventType: "Casual", location: "Bílina" },
   { id: "3", startsAt: "2026-05-22T18:00:00.000Z", title: "Casual Pod", eventType: "Casual", location: null },
 ];
 
