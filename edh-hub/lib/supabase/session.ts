@@ -23,7 +23,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     .eq("id", id)
     .maybeSingle();
 
-  if (profileError) {
+  if (profileError && profileError.code !== "PGRST205" && profileError.code !== "42P01") {
     console.error("Profile lookup failed", profileError.code, profileError.message);
   }
 

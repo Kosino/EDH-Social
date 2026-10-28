@@ -45,11 +45,15 @@ const MIGRATION_MESSAGE =
 
 type PostgrestError = { code?: string; message?: string };
 
+function isMissingTable(error: PostgrestError) {
+  return error.code === "PGRST205" || error.code === "42P01";
+}
+
 function failure(error: PostgrestError): QueryResult<never> {
-  console.error("Supabase query failed", error.code, error.message);
-  if (error.code === "PGRST205" || error.code === "42P01") {
+  if (isMissingTable(error)) {
     return { status: "error", message: MIGRATION_MESSAGE };
   }
+  console.error("Supabase query failed", error.code, error.message);
   return { status: "error", message: "Data ze Supabase se nepodařilo načíst." };
 }
 
