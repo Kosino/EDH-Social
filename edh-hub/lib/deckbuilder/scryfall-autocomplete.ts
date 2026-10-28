@@ -30,9 +30,11 @@ export async function fetchCardNameSuggestions(
     if (!res.ok) return [];
     const body = (await res.json()) as { data?: Array<{ name?: string }> };
     const needle = q.toLowerCase();
-    const names = (body.data ?? [])
-      .map((c) => c.name?.trim())
-      .filter((n): n is string => Boolean(n) && n.toLowerCase().includes(needle));
+    const names: string[] = [];
+    for (const card of body.data ?? []) {
+      const n = card.name?.trim();
+      if (n && n.toLowerCase().includes(needle)) names.push(n);
+    }
     return Array.from(new Set(names)).slice(0, 12);
   }
 

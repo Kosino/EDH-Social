@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useEffectEvent,
   useId,
   useRef,
   useState,
@@ -48,36 +47,34 @@ export default function ScryfallCardInput({
   const [pending, startTransition] = useTransition();
   const [loading, setLoading] = useState(false);
 
-  const runSearch = useEffectEvent(async (q: string, signal: AbortSignal) => {
-    if (q.trim().length < 2) {
-      setItems([]);
-      setOpen(false);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const names = await fetchCardNameSuggestions(q, mode, signal);
-      if (signal.aborted) return;
-      startTransition(() => {
-        setItems(names);
-        setActive(names.length ? 0 : -1);
-        setOpen(names.length > 0);
-      });
-    } catch (err) {
-      if ((err as Error)?.name === "AbortError") return;
-      setItems([]);
-      setOpen(false);
-    } finally {
-      if (!signal.aborted) setLoading(false);
-    }
-  });
-
   useEffect(() => {
     const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      void runSearch(value, controller.signal);
+    const timer = window.setTimeout(async () => {
+      const q = value.trim();
+      if (q.length < 2) {
+        setItems([]);
+        setOpen(false);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const names = await fetchCardNameSuggestions(q, mode, controller.signal);
+        if (controller.signal.aborted) return;
+        startTransition(() => {
+          setItems(names);
+          setActive(names.length ? 0 : -1);
+          setOpen(names.length > 0);
+        });
+      } catch (err) {
+        if ((err as Error)?.name === "AbortError") return;
+        setItems([]);
+        setOpen(false);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
     }, DEBOUNCE_MS);
+
     return () => {
       controller.abort();
       window.clearTimeout(timer);
@@ -95,8 +92,8 @@ export default function ScryfallCardInput({
     return () => document.removeEventListener("mousedown", onDocMouseDown);
   }, []);
 
-  function pick(name: string) {
-    setValue(name);
+  function pick(cardName: string) {
+    setValue(cardName);
     setOpen(false);
     setItems([]);
     setActive(-1);
