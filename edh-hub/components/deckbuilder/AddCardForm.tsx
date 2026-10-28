@@ -1,13 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import SubmitButton from "@/components/auth/SubmitButton";
 import { fieldClass, FormError } from "@/components/forms/fields";
 import ScryfallCardInput from "@/components/deckbuilder/ScryfallCardInput";
 import { addCardToDeck } from "@/app/decks/actions";
 
 export default function AddCardForm({ deckId }: { deckId: string }) {
-  const [state, formAction] = useActionState(addCardToDeck, null);
+  const [state, formAction, isPending] = useActionState(addCardToDeck, null);
+  const [resetKey, setResetKey] = useState(0);
+  const wasPending = useRef(false);
+
+  useEffect(() => {
+    if (wasPending.current && !isPending && !state?.error) {
+      setResetKey((k) => k + 1);
+    }
+    wasPending.current = isPending;
+  }, [isPending, state]);
 
   return (
     <form action={formAction} className="min-w-0 flex-1">
@@ -17,6 +26,8 @@ export default function AddCardForm({ deckId }: { deckId: string }) {
       <div className="flex flex-wrap items-stretch gap-2 sm:flex-nowrap">
         <div className="min-w-0 flex-1">
           <ScryfallCardInput
+            key={resetKey}
+            resetKey={resetKey}
             name="cardName"
             required
             placeholder="Najít a přidat kartu…"
