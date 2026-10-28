@@ -1,48 +1,68 @@
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function TavernaDashboardPage() {
   const deckbuilderOn = await isFeatureEnabled("deckbuilder_core");
 
+  const links = [
+    {
+      href: "/taverna/deckbuilder",
+      label: "Deckbuilder",
+      hint: "Seznam decků · visual editor",
+      primary: true,
+    },
+    {
+      href: "/decks/new",
+      label: "Nový deck",
+      hint: "Commander + partner",
+      primary: false,
+    },
+    {
+      href: "/taverna/deckbuilder/import",
+      label: "Importovat seznam",
+      hint: "Arena / Moxfield text",
+      primary: false,
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       <p className="text-xs font-medium uppercase tracking-wider text-accent">Taverna u Kosa</p>
       <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">Taverna</h1>
-      <p className="mt-3 max-w-xl text-sm leading-relaxed text-foreground/60">
-        Deckbuilding hub uvnitř {BRAND_NAME}. Stavěj Commandery, kontroluj legalitu a později
-        importuj listy z Moxfieldu.
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-foreground/60">
+        Deckbuilding hub v {BRAND_NAME} — UX ve stylu Moxfieldu: rychlé přidávání karet, velký
+        náhled a visual grid.
+        {!deckbuilderOn ? " (deckbuilder_core je zatím vypnutý)" : ""}
       </p>
 
-      <ul className="mt-10 space-y-3">
-        <li>
+      <div className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-card/70 p-2">
+        {links.map((item) => (
           <Link
-            href="/taverna/deckbuilder"
-            className="block rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/40"
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "min-w-[10rem] flex-1 rounded-xl px-4 py-3 transition",
+              item.primary
+                ? "bg-primary text-white hover:bg-primary/90"
+                : "bg-white/[0.03] text-foreground/90 hover:bg-white/[0.06]"
+            )}
           >
-            <h2 className="font-display text-xl font-semibold">Deckbuilder</h2>
-            <p className="mt-1 text-sm text-foreground/55">
-              Tvoje decky, nový deck a editor s legality enginem.
-              {!deckbuilderOn ? " (feature flag zatím vypnutý)" : ""}
-            </p>
-            <span className="mt-3 inline-block text-sm text-primary">Otevřít →</span>
+            <span className="block text-sm font-semibold">{item.label}</span>
+            <span
+              className={cn(
+                "mt-0.5 block text-xs",
+                item.primary ? "text-white/75" : "text-foreground/45"
+              )}
+            >
+              {item.hint}
+            </span>
           </Link>
-        </li>
-        <li>
-          <Link
-            href="/taverna/deckbuilder/import"
-            className="block rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/40"
-          >
-            <h2 className="font-display text-xl font-semibold">Importovat seznam</h2>
-            <p className="mt-1 text-sm text-foreground/55">
-              Nahraj textový decklist (Arena / Moxfield export) do existujícího decku.
-            </p>
-            <span className="mt-3 inline-block text-sm text-primary">Import →</span>
-          </Link>
-        </li>
-      </ul>
+        ))}
+      </div>
     </div>
   );
 }

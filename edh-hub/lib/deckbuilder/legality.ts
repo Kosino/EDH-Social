@@ -9,7 +9,18 @@ export type DeckCardInput = {
   colorIdentity?: string[];
   isBasicLand?: boolean;
   typeLine?: string | null;
+  oracleText?: string | null;
 };
+
+/** Partner / Partner with / Friends forever (command zone dual commanders). */
+export function hasPartnerAbility(oracleText: string | null | undefined): boolean {
+  const t = (oracleText ?? "").toLowerCase();
+  if (!t.trim()) return false;
+  if (/\bfriends forever\b/.test(t)) return true;
+  if (/\bpartner with\b/.test(t)) return true;
+  // Keyword line "Partner" (avoid "partnership", "partners")
+  return /(^|\n)\s*partner\s*(\n|$|\.|;)/.test(t) || /\bpartner\b(?!\s*with)/.test(t);
+}
 
 export type DeckSnapshot = {
   format: DeckFormat;
@@ -135,6 +146,19 @@ export function evaluateDeckLegality(deck: DeckSnapshot): LegalityReport {
       severity: "error",
       message: `Commander zóna má ${commanderQty} karet (max 2 při partnerovi).`,
     });
+  } else if (commanderQty === 2) {
+    const withOracle = commanders.filter((c) => (c.oracleText ?? "").trim().length > 0);
+    if (withOracle.length === commanders.length) {
+      const missing = withOracle.filter((c) => !hasPartnerAbility(c.oracleText));
+      if (missing.length > 0) {
+        issues.push({
+          code: "partner_required",
+          severity: "error",
+          message:
+            "Dva commandeři vyžadují Partner / Partner with / Friends forever na obou kartách.",
+        });
+      }
+    }
   }
 
   const nameCounts = new Map<string, { qty: number; basic: boolean }>();

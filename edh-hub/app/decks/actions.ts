@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { parseDecklistText } from "@/lib/deckbuilder/import";
-import { normalizeColorIdentity } from "@/lib/deckbuilder/legality";
-import { resolveCardByName } from "@/lib/deckbuilder/scryfall-card";
+import { hasPartnerAbility, normalizeColorIdentity } from "@/lib/deckbuilder/legality";
+import { resolveCardByName, type ResolvedCard } from "@/lib/deckbuilder/scryfall-card";
 import { safeNext } from "@/lib/redirect";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type FormState = { error: string; message?: string } | null;
 
@@ -38,6 +39,38 @@ function dbError(message: string) {
   return "Uložení se nepovedlo. Zkus to znovu.";
 }
 
+async function upsertCardCache(supabase: SupabaseClient, card: ResolvedCard) {
+  if (!card.scryfallId) return;
+  await supabase.from("card_cache").upsert({
+    scryfall_id: card.scryfallId,
+    name: card.name,
+    mana_cost: card.manaCost,
+    type_line: card.typeLine,
+    oracle_text: card.oracleText,
+    color_identity: card.colorIdentity,
+    image_url: card.imageUrl,
+    is_basic_land: card.isBasicLand,
+    legalities: card.legalities,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+function commanderCardRow(deckId: string, card: ResolvedCard) {
+  return {
+    deck_id: deckId,
+    scryfall_id: card.scryfallId,
+    name: card.name,
+    quantity: 1,
+    board: "commander" as const,
+    mana_cost: card.manaCost,
+    type_line: card.typeLine,
+    oracle_text: card.oracleText,
+    color_identity: card.colorIdentity,
+    image_url: card.imageUrl,
+    is_basic_land: false,
+  };
+}
+
 export async function createDeck(_prev: FormState, formData: FormData): Promise<FormState> {
   const auth = await requireBuilderUser("/decks/new");
   if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
@@ -45,6 +78,7 @@ export async function createDeck(_prev: FormState, formData: FormData): Promise<
   const name = String(formData.get("name") ?? "").trim();
   const format = String(formData.get("format") ?? "EDH").trim();
   const commanderName = String(formData.get("commander") ?? "").trim();
+  const partnerNameRaw = String(formData.get("partner") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim() || null;
 
   if (name.length < 1 || name.length > 120) return { error: "Název: 1–120 znaků." };
@@ -52,11 +86,34 @@ export async function createDeck(_prev: FormState, formData: FormData): Promise<
   if (commanderName.length < 1 || commanderName.length > 160) {
     return { error: "Commander: 1–160 znaků." };
   }
+  if (partnerNameRaw.length > 160) return { error: "Partner: max 160 znaků." };
 
   const commander = await resolveCardByName(commanderName);
   if (!commander) return { error: "Commandera se nepodařilo najít." };
 
-  const colorIdentity = normalizeColorIdentity(commander.colorIdentity);
+  let partner: ResolvedCard | null = null;
+  if (partnerNameRaw) {
+    partner = await resolveCardByName(partnerNameRaw);
+    if (!partner) return { error: "Partnera se nepodařilo najít." };
+    if (partner.name.toLowerCase() === commander.name.toLowerCase()) {
+      return { error: "Partner musí být jiná karta než commander." };
+    }
+    if (
+      commander.oracleText &&
+      partner.oracleText &&
+      (!hasPartnerAbility(commander.oracleText) || !hasPartnerAbility(partner.oracleText))
+    ) {
+      return {
+        error:
+          "Obě karty musí mít Partner / Partner with / Friends forever (nebo nech partner prázdný).",
+      };
+    }
+  }
+
+  const colorIdentity = normalizeColorIdentity([
+    ...commander.colorIdentity,
+    ...(partner?.colorIdentity ?? []),
+  ]);
   const supabase = await createClient();
 
   const { data: deck, error } = await supabase
@@ -68,6 +125,8 @@ export async function createDeck(_prev: FormState, formData: FormData): Promise<
       description,
       commander_name: commander.name,
       commander_scryfall_id: commander.scryfallId,
+      partner_name: partner?.name ?? null,
+      partner_scryfall_id: partner?.scryfallId ?? null,
       color_identity: colorIdentity,
       is_public: true,
     })
@@ -79,41 +138,140 @@ export async function createDeck(_prev: FormState, formData: FormData): Promise<
     return { error: dbError(error?.message ?? "") };
   }
 
-  const { error: cardError } = await supabase.from("deck_cards").insert({
-    deck_id: deck.id,
-    scryfall_id: commander.scryfallId,
-    name: commander.name,
-    quantity: 1,
-    board: "commander",
-    mana_cost: commander.manaCost,
-    type_line: commander.typeLine,
-    oracle_text: commander.oracleText,
-    color_identity: commander.colorIdentity,
-    image_url: commander.imageUrl,
-    is_basic_land: false,
-  });
+  const commanderRows = [commanderCardRow(deck.id, commander)];
+  if (partner) commanderRows.push(commanderCardRow(deck.id, partner));
+
+  const { error: cardError } = await supabase.from("deck_cards").insert(commanderRows);
 
   if (cardError) {
     console.error("createDeck commander card", cardError.code, cardError.message);
     return { error: dbError(cardError.message) };
   }
 
-  if (commander.scryfallId) {
-    await supabase.from("card_cache").upsert({
-      scryfall_id: commander.scryfallId,
-      name: commander.name,
-      mana_cost: commander.manaCost,
-      type_line: commander.typeLine,
-      oracle_text: commander.oracleText,
-      color_identity: commander.colorIdentity,
-      image_url: commander.imageUrl,
-      is_basic_land: false,
-      legalities: commander.legalities,
-      updated_at: new Date().toISOString(),
-    });
-  }
+  await upsertCardCache(supabase, commander);
+  if (partner) await upsertCardCache(supabase, partner);
 
   redirect(`/decks/v2/${deck.id}/edit`);
+}
+
+/** Add or replace partner commander on an existing decks_v2 deck. Empty partner clears it. */
+export async function setDeckPartner(_prev: FormState, formData: FormData): Promise<FormState> {
+  const deckId = String(formData.get("deckId") ?? "");
+  if (!UUID.test(deckId)) return { error: "Neplatný deck." };
+
+  const auth = await requireBuilderUser(`/decks/v2/${deckId}/edit`);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+
+  const partnerNameRaw = String(formData.get("partner") ?? "").trim();
+  if (partnerNameRaw.length > 160) return { error: "Partner: max 160 znaků." };
+
+  const supabase = await createClient();
+  const { data: deck } = await supabase
+    .from("decks_v2")
+    .select("owner_id, commander_name, commander_scryfall_id, color_identity")
+    .eq("id", deckId)
+    .maybeSingle();
+
+  if (!deck || deck.owner_id !== auth.user.id) {
+    return { error: "Nemáš oprávnění upravovat tento deck." };
+  }
+
+  // Remove existing partner card rows (keep primary commander by name).
+  const { data: commanderCards } = await supabase
+    .from("deck_cards")
+    .select("id, name")
+    .eq("deck_id", deckId)
+    .eq("board", "commander");
+
+  const primaryName = String(deck.commander_name ?? "").toLowerCase();
+  const partnerRows = (commanderCards ?? []).filter((c) => c.name.toLowerCase() !== primaryName);
+  if (partnerRows.length) {
+    await supabase
+      .from("deck_cards")
+      .delete()
+      .in(
+        "id",
+        partnerRows.map((r) => r.id)
+      );
+  }
+
+  if (!partnerNameRaw) {
+    // Rebuild color identity from primary commander card if present.
+    const { data: primaryCard } = await supabase
+      .from("deck_cards")
+      .select("color_identity")
+      .eq("deck_id", deckId)
+      .eq("board", "commander")
+      .eq("name", deck.commander_name)
+      .maybeSingle();
+
+    await supabase
+      .from("decks_v2")
+      .update({
+        partner_name: null,
+        partner_scryfall_id: null,
+        color_identity: normalizeColorIdentity(
+          (primaryCard?.color_identity as string[] | null) ?? (deck.color_identity as string[])
+        ),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", deckId);
+
+    revalidatePath(`/decks/v2/${deckId}`);
+    revalidatePath(`/decks/v2/${deckId}/edit`);
+    return { error: "", message: "Partner odebrán." };
+  }
+
+  const partner = await resolveCardByName(partnerNameRaw);
+  if (!partner) return { error: "Partnera se nepodařilo najít." };
+  if (partner.name.toLowerCase() === primaryName) {
+    return { error: "Partner musí být jiná karta než commander." };
+  }
+
+  const { data: primaryCard } = await supabase
+    .from("deck_cards")
+    .select("oracle_text, color_identity")
+    .eq("deck_id", deckId)
+    .eq("board", "commander")
+    .eq("name", deck.commander_name)
+    .maybeSingle();
+
+  const primaryOracle = (primaryCard?.oracle_text as string | null) ?? null;
+  if (
+    primaryOracle &&
+    partner.oracleText &&
+    (!hasPartnerAbility(primaryOracle) || !hasPartnerAbility(partner.oracleText))
+  ) {
+    return {
+      error: "Obě karty musí mít Partner / Partner with / Friends forever.",
+    };
+  }
+
+  const { error: insertError } = await supabase
+    .from("deck_cards")
+    .insert(commanderCardRow(deckId, partner));
+  if (insertError) return { error: dbError(insertError.message) };
+
+  const colorIdentity = normalizeColorIdentity([
+    ...((primaryCard?.color_identity as string[] | null) ?? []),
+    ...partner.colorIdentity,
+  ]);
+
+  await supabase
+    .from("decks_v2")
+    .update({
+      partner_name: partner.name,
+      partner_scryfall_id: partner.scryfallId,
+      color_identity: colorIdentity,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", deckId);
+
+  await upsertCardCache(supabase, partner);
+
+  revalidatePath(`/decks/v2/${deckId}`);
+  revalidatePath(`/decks/v2/${deckId}/edit`);
+  return null;
 }
 
 export async function addCardToDeck(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -233,6 +391,82 @@ export async function removeCardFromDeck(_prev: FormState, formData: FormData): 
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function updateDeckV2Meta(_prev: FormState, formData: FormData): Promise<FormState> {
+  const deckId = String(formData.get("deckId") ?? "");
+  if (!UUID.test(deckId)) return { error: "Neplatný deck." };
+
+  const auth = await requireBuilderUser(`/decks/v2/${deckId}/edit`);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+
+  const name = String(formData.get("name") ?? "").trim();
+  const format = String(formData.get("format") ?? "EDH").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const isPublic = formData.get("isPublic") === "on" || formData.get("isPublic") === "true";
+
+  if (name.length < 1 || name.length > 120) return { error: "Název: 1–120 znaků." };
+  if (format !== "EDH" && format !== "cEDH") return { error: "Neplatný formát." };
+  if (description && description.length > 1000) return { error: "Popis max 1000 znaků." };
+
+  const supabase = await createClient();
+  const { data: deck } = await supabase
+    .from("decks_v2")
+    .select("owner_id")
+    .eq("id", deckId)
+    .maybeSingle();
+
+  if (!deck || deck.owner_id !== auth.user.id) {
+    return { error: "Nemáš oprávnění upravovat tento deck." };
+  }
+
+  const { error } = await supabase
+    .from("decks_v2")
+    .update({
+      name,
+      format,
+      description,
+      is_public: isPublic,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", deckId);
+
+  if (error) return { error: dbError(error.message) };
+
+  revalidatePath(`/decks/v2/${deckId}`);
+  revalidatePath(`/decks/v2/${deckId}/edit`);
+  revalidatePath("/taverna/deckbuilder");
+  return null;
+}
+
+export async function deleteDeckV2(_prev: FormState, formData: FormData): Promise<FormState> {
+  const deckId = String(formData.get("deckId") ?? "");
+  if (!UUID.test(deckId)) return { error: "Neplatný deck." };
+
+  const auth = await requireBuilderUser(`/decks/v2/${deckId}/edit`);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+
+  const confirm = String(formData.get("confirm") ?? "").trim().toLowerCase();
+  if (confirm !== "smazat") {
+    return { error: "Pro smazání napiš do potvrzení „smazat“." };
+  }
+
+  const supabase = await createClient();
+  const { data: deck } = await supabase
+    .from("decks_v2")
+    .select("owner_id")
+    .eq("id", deckId)
+    .maybeSingle();
+
+  if (!deck || deck.owner_id !== auth.user.id) {
+    return { error: "Nemáš oprávnění smazat tento deck." };
+  }
+
+  const { error } = await supabase.from("decks_v2").delete().eq("id", deckId);
+  if (error) return { error: dbError(error.message) };
+
+  revalidatePath("/taverna/deckbuilder");
+  redirect("/taverna/deckbuilder");
 }
 
 /**

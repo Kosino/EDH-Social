@@ -34,6 +34,8 @@ export type DeckV2ListItem = {
   name: string;
   format: DeckFormat;
   commanderName: string;
+  partnerName: string | null;
+  commanderImageUrl: string | null;
   updatedAt: string;
   cardCount: number;
 };
@@ -44,7 +46,9 @@ export async function listMyDecksV2(ownerId: string): Promise<QueryResult<DeckV2
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("decks_v2")
-    .select("id, name, format, commander_name, updated_at, deck_cards(quantity)")
+    .select(
+      "id, name, format, commander_name, partner_name, updated_at, deck_cards(quantity, board, image_url, name)"
+    )
     .eq("owner_id", ownerId)
     .order("updated_at", { ascending: false });
 
@@ -60,13 +64,24 @@ export async function listMyDecksV2(ownerId: string): Promise<QueryResult<DeckV2
   }
 
   const items: DeckV2ListItem[] = (data ?? []).map((row) => {
-    const cards = row.deck_cards as { quantity?: number }[] | null;
-    const cardCount = (cards ?? []).reduce((sum, c) => sum + (Number(c.quantity) || 0), 0);
+    const cards =
+      (row.deck_cards as
+        | { quantity?: number; board?: string; image_url?: string | null; name?: string }[]
+        | null) ?? [];
+    const cardCount = cards.reduce((sum, c) => sum + (Number(c.quantity) || 0), 0);
+    const commanderCard =
+      cards.find(
+        (c) =>
+          c.board === "commander" &&
+          (c.name ?? "").toLowerCase() === String(row.commander_name ?? "").toLowerCase()
+      ) ?? cards.find((c) => c.board === "commander");
     return {
       id: row.id as string,
       name: row.name as string,
       format: row.format as DeckFormat,
       commanderName: row.commander_name as string,
+      partnerName: (row.partner_name as string | null) ?? null,
+      commanderImageUrl: (commanderCard?.image_url as string | null) ?? null,
       updatedAt: row.updated_at as string,
       cardCount,
     };

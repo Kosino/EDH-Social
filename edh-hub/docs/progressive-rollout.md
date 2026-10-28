@@ -6,6 +6,8 @@
 
 Flag vypnutý = legacy `/decks` UX beze změny. Zapnutí per-key v `feature_flags`.
 
+UX směr (všechny Taverna obrazovky): `docs/moxfield-ux.md`.
+
 | Flag | Migrace enable |
 | --- | --- |
 | `deckbuilder_core` | `20261029120000_taverna_u_kosa.sql` (default on) |

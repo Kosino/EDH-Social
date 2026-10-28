@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
-import DeckCardTile from "@/components/deckbuilder/DeckCardTile";
+import DeckChrome from "@/components/deckbuilder/DeckChrome";
 import DeckStatsPanel from "@/components/deckbuilder/DeckStatsPanel";
+import DeckVisualBrowser from "@/components/deckbuilder/DeckVisualBrowser";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { evaluateDeckLegality } from "@/lib/deckbuilder/legality";
 import { getDeckV2 } from "@/lib/deckbuilder/queries";
@@ -16,17 +17,16 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const [result, statsOn] = await Promise.all([getDeckV2(id), isFeatureEnabled("deckbuilder_stats")]);
 
-
   if (result.status === "error") {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-6xl">
         <DataNotice message={result.message} />
       </div>
     );
   }
   if (result.status === "unconfigured") {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-6xl">
         <DataNotice message="Supabase ještě není nastavené." />
       </div>
     );
@@ -46,6 +46,7 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
       colorIdentity: c.colorIdentity,
       isBasicLand: c.isBasicLand,
       typeLine: c.typeLine,
+      oracleText: c.oracleText,
     })),
   });
   const illegal = new Map(report.cards.map((c) => [c.name.toLowerCase(), c]));
@@ -62,75 +63,71 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
       )
     : null;
 
+  const browserCards = deck.cards.map((card) => {
+    const status = illegal.get(card.name.toLowerCase());
+    return {
+      id: card.id,
+      name: card.name,
+      quantity: card.quantity,
+      board: card.board,
+      manaCost: card.manaCost,
+      typeLine: card.typeLine,
+      imageUrl: card.imageUrl,
+      isBasicLand: card.isBasicLand,
+      illegal: Boolean(status && !status.legal),
+      reasons: status?.reasons,
+    };
+  });
+
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       <Link
         href={`/profile/${deck.ownerUsername}`}
         className="text-sm text-primary hover:underline"
       >
-        ← Profil @{deck.ownerUsername}
+        ← @{deck.ownerUsername}
       </Link>
 
-      <header className="mt-6 mb-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-accent">Taverna u Kosa</p>
-        <h1 className="mt-1 font-display text-3xl font-bold">{deck.name}</h1>
-        <p className="mt-2 text-sm text-foreground/60">
-          {deck.format} · {deck.commanderName}
-          {deck.colorIdentity.length ? ` · ${deck.colorIdentity.join("")}` : ""}
-          {" · "}
-          {formatRelativePrague(deck.updatedAt)}
-        </p>
-        {isOwner ? (
-          <Link
-            href={`/decks/v2/${deck.id}/edit`}
-            className="mt-4 inline-block rounded-lg border border-accent px-4 py-2 text-sm text-accent hover:bg-accent/10"
-          >
-            Upravit / importovat seznam
-          </Link>
-        ) : null}
-      </header>
+      <div className="mt-4">
+        <DeckChrome
+          deckId={deck.id}
+          name={deck.name}
+          format={deck.format}
+          commanderName={deck.commanderName}
+          partnerName={deck.partnerName}
+          colorIdentity={deck.colorIdentity}
+          cardCount={report.cardCount}
+          legal={report.legal}
+          active="view"
+          isOwner={isOwner}
+          meta={formatRelativePrague(deck.updatedAt)}
+        />
+      </div>
 
-      <section
-        className={cn(
-          "mb-8 rounded-xl border px-4 py-3 text-sm",
-          report.legal ? "border-casual/40 bg-casual/10" : "border-red-400/40 bg-red-400/10"
-        )}
-      >
-        <p className="font-medium">
-          Legality: {report.legal ? "OK" : "Nelegální"} · {report.cardCount}/100 karet
-        </p>
-        {report.issues.length > 0 ? (
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-foreground/75">
-            {report.issues.slice(0, 8).map((issue, i) => (
+      {!report.legal ? (
+        <div
+          className={cn(
+            "mb-5 rounded-xl border px-4 py-3 text-sm",
+            "border-red-400/40 bg-red-400/10"
+          )}
+        >
+          <ul className="list-disc space-y-1 pl-5 text-foreground/75">
+            {report.issues.slice(0, 6).map((issue, i) => (
               <li key={`${issue.code}-${i}`}>{issue.message}</li>
             ))}
           </ul>
-        ) : null}
-      </section>
-
-      {stats ? (
-        <div className="mb-8">
-          <DeckStatsPanel stats={stats} />
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {deck.cards.map((card) => {
-          const status = illegal.get(card.name.toLowerCase());
-          return (
-            <DeckCardTile
-              key={card.id}
-              name={card.name}
-              quantity={card.quantity}
-              manaCost={card.manaCost}
-              typeLine={card.typeLine}
-              imageUrl={card.imageUrl}
-              illegal={Boolean(status && !status.legal)}
-              reasons={status?.reasons}
-            />
-          );
-        })}
-      </div>
+      {deck.description ? (
+        <p className="mb-5 max-w-3xl text-sm text-foreground/60">{deck.description}</p>
+      ) : null}
+
+      <DeckVisualBrowser
+        cards={browserCards}
+        mode="view"
+        sidebarExtra={stats ? <DeckStatsPanel stats={stats} /> : null}
+      />
     </div>
   );
 }

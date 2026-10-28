@@ -12,7 +12,7 @@ export default async function NewDeckPage() {
   const taverna = await isFeatureEnabled("deckbuilder_core");
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className={taverna ? "mx-auto max-w-3xl" : "mx-auto max-w-xl"}>
       {taverna ? (
         <nav className="mb-2 text-sm text-foreground/50">
           <Link href="/taverna" className="text-primary hover:underline">
@@ -30,10 +30,12 @@ export default async function NewDeckPage() {
           ← Profil
         </Link>
       )}
-      <h1 className="mt-4 text-3xl font-bold">{taverna ? "Nový deck — Taverna" : "Nový deck"}</h1>
-      <p className="mt-1 text-foreground/60">
+      <h1 className="mt-4 font-display text-3xl font-bold">
+        {taverna ? "Nový deck" : "Nový deck"}
+      </h1>
+      <p className="mt-1 text-sm text-foreground/60">
         {taverna
-          ? "Deckbuilder Taverna u Kosa: commander + karty + legality."
+          ? "Commander (+ partner) → hned otevře Moxfield-like editor."
           : "Veřejný deck na tvém profilu (legacy)."}
       </p>
       {taverna ? <TavernaDeckForm /> : <DeckForm />}

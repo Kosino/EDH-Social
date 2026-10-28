@@ -18,3 +18,5 @@ Implementace:
 - Modul 03 — `lib/deckbuilder/stats.ts`, `DeckStatsPanel` (flag `deckbuilder_stats`)
 
 Migrace: `20261029120000_taverna_u_kosa.sql`, `…130000_enable_deckbuilder_import.sql`, `…140000_enable_deckbuilder_stats.sql`.
+
+**UX north star:** Moxfield-like — viz `docs/moxfield-ux.md` (toolbar, levý náhled, visual grid). Platí pro stávající i budoucí Taverna UI.

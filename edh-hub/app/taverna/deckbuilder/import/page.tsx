@@ -40,7 +40,7 @@ export default async function ImportDecklistPage() {
       : [];
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="mx-auto max-w-3xl">
       <nav className="mb-4 text-sm text-foreground/50">
         <Link href="/taverna" className="text-primary hover:underline">
           Taverna
@@ -56,7 +56,7 @@ export default async function ImportDecklistPage() {
       <p className="text-xs font-medium uppercase tracking-wider text-accent">Taverna u Kosa</p>
       <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Importovat seznam</h1>
       <p className="mt-2 mb-6 text-sm text-foreground/55">
-        Nahraj textový decklist do existujícího Taverna decku.
+        Textový export (Arena / Moxfield) → cílový Taverna deck → visual editor.
       </p>
 
       {decksResult.status === "error" ? <DataNotice message={decksResult.message} /> : null}

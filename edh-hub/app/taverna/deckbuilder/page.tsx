@@ -1,9 +1,9 @@
 import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
+import DeckListGrid from "@/components/deckbuilder/DeckListGrid";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { listMyDecksV2 } from "@/lib/deckbuilder/queries";
 import { getCurrentUser } from "@/lib/supabase/session";
-import { formatRelativePrague } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export default async function DeckbuilderDashboardPage() {
   const decksResult = user && flagOn ? await listMyDecksV2(user.id) : null;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       <nav className="mb-4 text-sm text-foreground/50">
         <Link href="/taverna" className="text-primary hover:underline">
           Taverna
@@ -22,12 +22,12 @@ export default async function DeckbuilderDashboardPage() {
         <span className="text-foreground/70">Deckbuilder</span>
       </nav>
 
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-accent">Taverna u Kosa</p>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Deckbuilder</h1>
           <p className="mt-2 text-sm text-foreground/55">
-            Stavěj EDH / cEDH decky, přidávej karty a sleduj legalitu.
+            Moxfield-like editor: visual grid, legality, import.
           </p>
         </div>
         {user && flagOn ? (
@@ -74,26 +74,7 @@ export default async function DeckbuilderDashboardPage() {
             .
           </p>
         ) : (
-          <ul className="divide-y divide-white/10 border-t border-white/10">
-            {decksResult.data.map((deck) => (
-              <li key={deck.id}>
-                <Link
-                  href={`/decks/v2/${deck.id}`}
-                  className="flex flex-wrap items-center justify-between gap-3 py-4 hover:text-primary"
-                >
-                  <span className="min-w-0">
-                    <span className="block font-medium">{deck.name}</span>
-                    <span className="text-xs text-foreground/45">
-                      {deck.format} · {deck.commanderName} · {deck.cardCount} karet
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-xs text-foreground/40">
-                    {formatRelativePrague(deck.updatedAt)}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <DeckListGrid decks={decksResult.data} />
         )
       ) : null}
     </div>
