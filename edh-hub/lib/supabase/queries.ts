@@ -200,6 +200,24 @@ export async function getMyRsvpEventIds(userId: string): Promise<string[]> {
   return ((data ?? []) as Array<{ event_id: string }>).map((row) => row.event_id);
 }
 
+type EventRow = {
+  id: string;
+  title: string;
+  event_type: string;
+  starts_at: string;
+  location: string | null;
+};
+
+function mapEvents(rows: EventRow[]): HubEvent[] {
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    eventType: row.event_type,
+    startsAt: row.starts_at,
+    location: row.location,
+  }));
+}
+
 export async function getUpcomingEvents(): Promise<QueryResult<HubEvent[]>> {
   if (!getSupabaseEnv()) return { status: "unconfigured" };
 
@@ -212,23 +230,20 @@ export async function getUpcomingEvents(): Promise<QueryResult<HubEvent[]>> {
     .limit(20);
 
   if (error) return failure(error);
+  return { status: "ok", data: mapEvents((data ?? []) as EventRow[]) };
+}
 
-  const rows = (data ?? []) as Array<{
-    id: string;
-    title: string;
-    event_type: string;
-    starts_at: string;
-    location: string | null;
-  }>;
+export async function getEventsInRange(startIso: string, endIso: string): Promise<QueryResult<HubEvent[]>> {
+  if (!getSupabaseEnv()) return { status: "unconfigured" };
 
-  return {
-    status: "ok",
-    data: rows.map((row) => ({
-      id: row.id,
-      title: row.title,
-      eventType: row.event_type,
-      startsAt: row.starts_at,
-      location: row.location,
-    })),
-  };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, title, event_type, starts_at, location")
+    .gte("starts_at", startIso)
+    .lt("starts_at", endIso)
+    .order("starts_at", { ascending: true });
+
+  if (error) return failure(error);
+  return { status: "ok", data: mapEvents((data ?? []) as EventRow[]) };
 }
