@@ -30,31 +30,45 @@ function sampleEventsAround(now = new Date()): HubEvent[] {
   return [
     {
       id: "sample-1",
-      startsAt: at(dayOffset(2), "18:00"),
-      title: "cEDH Tournament Most",
+      startsAt: at(dayOffset(0), "18:00"),
+      title: "cEDH Tournament",
       eventType: "cEDH Tournament",
-      location: "Most",
+      location: "70-player Swiss · Most",
     },
     {
       id: "sample-2",
-      startsAt: at(dayOffset(4), "19:00"),
-      title: "Friday Night Magic",
-      eventType: "Friday Night Magic",
-      location: "Bílina",
+      startsAt: at(dayOffset(1), "19:00"),
+      title: "Casual Pod",
+      eventType: "Casual Pod",
+      location: "Precons welcome · Bílina",
     },
     {
       id: "sample-3",
-      startsAt: at(dayOffset(7), "17:00"),
-      title: "EDH Tournament",
-      eventType: "EDH Tournament",
-      location: "Praha",
+      startsAt: at(dayOffset(2), "19:30"),
+      title: "Friday Night Magic",
+      eventType: "Friday Night Magic",
+      location: "Relaxed pods · Praha",
     },
     {
       id: "sample-4",
-      startsAt: at(dayOffset(9), "20:00"),
+      startsAt: at(dayOffset(3), "17:00"),
+      title: "EDH Tournament",
+      eventType: "EDH Tournament",
+      location: "Store champs · Most",
+    },
+    {
+      id: "sample-5",
+      startsAt: at(dayOffset(5), "20:00"),
       title: "Casual Pod",
       eventType: "Casual Pod",
-      location: "Discord",
+      location: "4 players · Discord",
+    },
+    {
+      id: "sample-6",
+      startsAt: at(dayOffset(7), "18:00"),
+      title: "cEDH Tournament",
+      eventType: "cEDH Tournament",
+      location: "Top Cut · Online",
     },
   ];
 }
@@ -130,7 +144,11 @@ export default async function EventsPage({
   for (const event of monthEvents) {
     const key = pragueDateKey(event.startsAt);
     if (!markers[key]) markers[key] = [];
-    markers[key].push({ title: event.title, eventType: event.eventType });
+    markers[key].push({
+      title: event.title,
+      eventType: event.eventType,
+      location: event.location,
+    });
   }
   const monthHasEvents = monthEvents.length > 0;
 

@@ -24,7 +24,7 @@ export const EVENT_KIND_META: Record<EventKind, EventKindMeta> = {
     icon: "/icons/cedh-tournament.jpg",
     chip: "bg-primary/20 text-primary",
     border: "border-primary text-primary hover:bg-primary/10",
-    pill: "bg-primary/25 text-primary",
+    pill: "bg-primary/30 text-primary",
     dot: "bg-primary",
   },
   "EDH Tournament": {
@@ -32,7 +32,7 @@ export const EVENT_KIND_META: Record<EventKind, EventKindMeta> = {
     icon: "/icons/edh-tournament.jpg",
     chip: "bg-accent/20 text-accent",
     border: "border-accent text-accent hover:bg-accent/10",
-    pill: "bg-accent/25 text-accent",
+    pill: "bg-accent/30 text-accent",
     dot: "bg-accent",
   },
   "Friday Night Magic": {
@@ -40,7 +40,7 @@ export const EVENT_KIND_META: Record<EventKind, EventKindMeta> = {
     icon: "/icons/friday-night.jpg",
     chip: "bg-accent/20 text-accent",
     border: "border-accent text-accent hover:bg-accent/10",
-    pill: "bg-accent/25 text-accent",
+    pill: "bg-accent/30 text-accent",
     dot: "bg-accent",
   },
   "Casual Pod": {
@@ -48,10 +48,10 @@ export const EVENT_KIND_META: Record<EventKind, EventKindMeta> = {
     icon: "/icons/casual-pod.jpg",
     chip: "bg-casual/20 text-casual",
     border: "border-casual text-casual hover:bg-casual/10",
-    pill: "bg-casual/25 text-casual",
+    pill: "bg-casual/30 text-casual",
     dot: "bg-casual",
   },
-};
+}
 
 /** Map legacy DB values from earlier Part 1 schema. */
 const LEGACY_EVENT_TYPE: Record<string, EventKind> = {

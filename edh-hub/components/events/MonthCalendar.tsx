@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import EventKindIcon from "@/components/events/EventKindIcon";
 import {
   calendarCells,
   eventsPath,
@@ -12,8 +13,13 @@ import { eventTypeStyle } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const WEEKDAYS = ["Ne", "Po", "Út", "St", "Čt", "Pá", "So"] as const;
+const MAX_VISIBLE = 3;
 
-export type DayMarker = { title: string; eventType: string };
+export type DayMarker = {
+  title: string;
+  eventType: string;
+  location?: string | null;
+};
 
 function eventCountLabel(count: number) {
   if (count === 1) return "1 event";
@@ -38,7 +44,7 @@ export default function MonthCalendar({
   const cells = calendarCells(month);
 
   return (
-    <div className="mb-6 rounded-2xl border border-white/10 bg-card p-4 sm:p-6" data-testid="event-calendar">
+    <div className="mb-6 rounded-2xl border border-white/10 bg-card p-3 sm:p-6" data-testid="event-calendar">
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link
           href={eventsPath({ month: previous.key })}
@@ -99,7 +105,7 @@ export default function MonthCalendar({
               data-today={today ? "true" : undefined}
               data-selected={selected ? "true" : undefined}
               className={cn(
-                "flex min-h-[4.5rem] flex-col rounded-lg p-1.5 text-left transition sm:min-h-[5.25rem] sm:p-2",
+                "flex min-h-[5.5rem] flex-col rounded-lg p-1 text-left transition sm:min-h-[7.25rem] sm:p-1.5",
                 selected ? "bg-primary/25 ring-2 ring-inset ring-primary" : "bg-white/5 hover:bg-white/10",
                 today && !selected && "ring-2 ring-inset ring-accent"
               )}
@@ -113,19 +119,35 @@ export default function MonthCalendar({
                 {cell.day}
               </span>
               <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
-                {dayMarkers.slice(0, 2).map((marker, markerIndex) => (
-                  <span
-                    key={`${cell.key}-${markerIndex}`}
-                    className={cn(
-                      "truncate rounded px-1 py-0.5 text-[9px] font-medium leading-tight sm:text-[10px]",
-                      eventTypeStyle(marker.eventType).pill
-                    )}
-                  >
-                    {marker.title}
-                  </span>
-                ))}
-                {count > 2 ? (
-                  <span className="px-1 text-[9px] text-foreground/50">+{count - 2}</span>
+                {dayMarkers.slice(0, MAX_VISIBLE).map((marker, markerIndex) => {
+                  const style = eventTypeStyle(marker.eventType);
+                  const detail = marker.location?.trim() || style.label;
+                  return (
+                    <span
+                      key={`${cell.key}-${markerIndex}`}
+                      className={cn(
+                        "flex min-w-0 items-start gap-1 rounded-md px-1 py-0.5",
+                        style.pill
+                      )}
+                    >
+                      <EventKindIcon
+                        eventType={marker.eventType}
+                        className="mt-px h-3.5 w-3.5 rounded-[3px] sm:h-4 sm:w-4"
+                        alt=""
+                      />
+                      <span className="min-w-0 flex-1 leading-tight">
+                        <span className="block truncate text-[9px] font-semibold sm:text-[10px]">
+                          {marker.title}
+                        </span>
+                        <span className="hidden truncate text-[8px] opacity-80 sm:block sm:text-[9px]">
+                          {detail}
+                        </span>
+                      </span>
+                    </span>
+                  );
+                })}
+                {count > MAX_VISIBLE ? (
+                  <span className="px-1 text-[9px] text-foreground/50">+{count - MAX_VISIBLE}</span>
                 ) : null}
               </div>
             </Link>
