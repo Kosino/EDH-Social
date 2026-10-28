@@ -44,7 +44,7 @@ create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   host_id uuid references public.profiles (id) on delete set null,
   title text not null check (char_length(title) between 1 and 160),
-  event_type text not null check (event_type in ('Competitive', 'Casual', 'Online')),
+  event_type text not null check (event_type in ('cEDH Tournament', 'EDH Tournament', 'Friday Night Magic', 'Casual Pod')),
   starts_at timestamptz not null,
   location text,
   created_at timestamptz not null default now()

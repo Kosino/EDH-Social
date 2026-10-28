@@ -8,7 +8,7 @@ Prototyp sociální sítě pro hráče Commander / cEDH. UI brand: **EDH Social*
 - **Feed** — příspěvky (`kind=post`), create → detail
 - **Články** — `/articles` list + detail + create (`kind=article`)
 - **Kalendář eventů** (Event calendar) — měsíční mřížka, výběr dne, RSVP; časy v `Europe/Prague`
-- **Eventy** — create (Competitive / Casual / Online), místa (Most, Bílina, …)
+- **Eventy** — create (cEDH Tournament / EDH Tournament / Friday Night Magic / Casual Pod), ikony v `public/icons/`, místa (Most, Bílina, …)
 - **Profil / bio** — guest vs owner, úprava popisu, Admin badge pro `kosino`
 - **Decky** — create + seznam na profilu (placeholder art only)
 - SQL migrace: `supabase/migrations/20261028100000_init.sql` + `20261028120000_posts_kind.sql`

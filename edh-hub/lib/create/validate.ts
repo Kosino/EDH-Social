@@ -1,10 +1,10 @@
+import { EVENT_KINDS, isEventKind, type EventKind } from "@/lib/events";
 import { pragueLocalToUtc } from "@/lib/utils";
 
 const FORMATS = ["EDH", "cEDH"] as const;
-const EVENT_TYPES = ["Competitive", "Casual", "Online"] as const;
 
 export type DeckFormat = (typeof FORMATS)[number];
-export type EventType = (typeof EVENT_TYPES)[number];
+export type EventType = EventKind;
 
 export type PostKind = "post" | "article";
 
@@ -112,7 +112,12 @@ export function parseEvent(
   const location = text(formData.get("location"));
 
   if (title.length < 1 || title.length > 160) return { ok: false, error: "Název eventu musí mít 1–160 znaků." };
-  if (!EVENT_TYPES.includes(eventType as EventType)) return { ok: false, error: "Vyber typ eventu." };
+  if (!isEventKind(eventType)) {
+    return {
+      ok: false,
+      error: `Vyber typ eventu (${EVENT_KINDS.join(", ")}).`,
+    };
+  }
   if (location.length > 160) return { ok: false, error: "Místo může mít nejvýš 160 znaků." };
 
   const startsAt = pragueLocalToUtc(startsAtRaw);
@@ -123,7 +128,7 @@ export function parseEvent(
     ok: true,
     value: {
       title,
-      eventType: eventType as EventType,
+      eventType,
       startsAt: startsAt.toISOString(),
       location: location || null,
     },

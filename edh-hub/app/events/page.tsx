@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
+import EventKindIcon from "@/components/events/EventKindIcon";
 import MonthCalendar, { type DayMarker } from "@/components/events/MonthCalendar";
 import { toggleRsvp } from "@/app/create/actions";
 import { eventTypeStyle } from "@/lib/brand";
 import { eventsPath, formatDayLabel, pragueDateKey, pragueMonthRange, resolveCalendarQuery } from "@/lib/calendar";
+import { EVENT_KINDS } from "@/lib/events";
 import { getEventsInRange, getMyRsvpEventIds, getUpcomingEvents, type HubEvent, type QueryResult } from "@/lib/supabase/queries";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { cn, formatEventDate, pragueLocalToUtc } from "@/lib/utils";
@@ -29,22 +31,29 @@ function sampleEventsAround(now = new Date()): HubEvent[] {
     {
       id: "sample-1",
       startsAt: at(dayOffset(2), "18:00"),
-      title: "cEDH Tournament",
-      eventType: "Competitive",
+      title: "cEDH Tournament Most",
+      eventType: "cEDH Tournament",
       location: "Most",
     },
     {
       id: "sample-2",
       startsAt: at(dayOffset(4), "19:00"),
-      title: "Friday Night EDH",
-      eventType: "Casual",
+      title: "Friday Night Magic",
+      eventType: "Friday Night Magic",
       location: "Bílina",
     },
     {
       id: "sample-3",
+      startsAt: at(dayOffset(7), "17:00"),
+      title: "EDH Tournament",
+      eventType: "EDH Tournament",
+      location: "Praha",
+    },
+    {
+      id: "sample-4",
       startsAt: at(dayOffset(9), "20:00"),
-      title: "Online Casual Pod",
-      eventType: "Online",
+      title: "Casual Pod",
+      eventType: "Casual Pod",
       location: "Discord",
     },
   ];
@@ -131,7 +140,7 @@ export default async function EventsPage({
         <div>
           <h1 className="font-display text-3xl font-bold">Kalendář eventů</h1>
           <p className="mt-1 text-foreground/60">
-            Turnaje, casual setkání a online pody · časy v Europe/Prague
+            cEDH, EDH turnaje, FNM a casual pody · časy v Europe/Prague
           </p>
         </div>
         <Link
@@ -150,10 +159,10 @@ export default async function EventsPage({
       />
 
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3 text-xs text-foreground/55">
-        <div className="flex flex-wrap gap-4">
-          <LegendDot className="bg-primary" label="Competitive" />
-          <LegendDot className="bg-casual" label="Casual" />
-          <LegendDot className="bg-accent" label="Online" />
+        <div className="flex flex-wrap gap-3">
+          {EVENT_KINDS.map((kind) => (
+            <LegendKind key={kind} eventType={kind} />
+          ))}
         </div>
         <p>Všechny časy jsou v Europe/Prague</p>
       </div>
@@ -222,11 +231,13 @@ export default async function EventsPage({
   );
 }
 
-function LegendDot({ className, label }: { className: string; label: string }) {
+function LegendKind({ eventType }: { eventType: string }) {
+  const style = eventTypeStyle(eventType);
   return (
     <span className="inline-flex items-center gap-2">
-      <span className={cn("h-2 w-2 rounded-full", className)} />
-      {label}
+      <EventKindIcon eventType={eventType} className="h-5 w-5 rounded-md" />
+      <span className={cn("h-2 w-2 rounded-full", style.dot)} aria-hidden />
+      {style.label}
     </span>
   );
 }
@@ -252,12 +263,13 @@ function EventItem({
   const block = dateBlock(event.startsAt);
 
   return (
-    <div className="animate-fade-rise flex items-center gap-4 rounded-xl border border-white/10 bg-card p-4">
+    <div className="animate-fade-rise flex items-center gap-3 rounded-xl border border-white/10 bg-card p-4 sm:gap-4">
       <div className="w-14 shrink-0 text-center">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/45">{block.month}</p>
         <p className="font-display text-2xl font-bold leading-none">{block.day}</p>
         <p className="mt-0.5 text-[10px] uppercase text-foreground/45">{block.weekday}</p>
       </div>
+      <EventKindIcon eventType={event.eventType} className="h-12 w-12 rounded-xl sm:h-14 sm:w-14" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-medium">{event.title}</h3>
