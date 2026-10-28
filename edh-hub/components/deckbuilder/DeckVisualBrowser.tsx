@@ -4,7 +4,11 @@ import { useMemo, useState, type ReactNode } from "react";
 import DeckCardTile from "@/components/deckbuilder/DeckCardTile";
 import RemoveCardButton from "@/components/deckbuilder/RemoveCardButton";
 import { toReadableCardImage } from "@/lib/deckbuilder/card-image";
-import { classifyTypeLine, type CardTypeCategory } from "@/lib/deckbuilder/stats";
+import {
+  classifyTypeLine,
+  cmcFromManaCost,
+  type CardTypeCategory,
+} from "@/lib/deckbuilder/stats";
 import { cn } from "@/lib/utils";
 
 export type DeckBrowserCard = {
@@ -19,6 +23,9 @@ export type DeckBrowserCard = {
   illegal: boolean;
   reasons?: string[];
 };
+
+type SortMode = "name" | "cmc";
+type ViewMode = "grid" | "dense";
 
 const GROUP_ORDER: Array<CardTypeCategory | "Commander" | "Sideboard"> = [
   "Commander",
@@ -40,6 +47,16 @@ function groupKey(card: DeckBrowserCard): CardTypeCategory | "Commander" | "Side
   return classifyTypeLine(card.typeLine, card.isBasicLand);
 }
 
+function sortCards(list: DeckBrowserCard[], sort: SortMode) {
+  return [...list].sort((a, b) => {
+    if (sort === "cmc") {
+      const d = cmcFromManaCost(a.manaCost) - cmcFromManaCost(b.manaCost);
+      if (d !== 0) return d;
+    }
+    return a.name.localeCompare(b.name, "en");
+  });
+}
+
 export default function DeckVisualBrowser({
   cards,
   deckId,
@@ -53,9 +70,10 @@ export default function DeckVisualBrowser({
   emptyMessage?: string;
   sidebarExtra?: ReactNode;
 }) {
-  const preferred =
-    cards.find((c) => c.board === "commander") ?? cards[0] ?? null;
+  const preferred = cards.find((c) => c.board === "commander") ?? cards[0] ?? null;
   const [previewId, setPreviewId] = useState<string | null>(preferred?.id ?? null);
+  const [sort, setSort] = useState<SortMode>("name");
+  const [view, setView] = useState<ViewMode>("grid");
 
   const preview = useMemo(() => {
     if (!cards.length) return null;
@@ -70,14 +88,21 @@ export default function DeckVisualBrowser({
       list.push(card);
       map.set(key, list);
     }
-    return GROUP_ORDER.map((key) => ({
-      key,
-      cards: map.get(key) ?? [],
-      count: (map.get(key) ?? []).reduce((s, c) => s + c.quantity, 0),
-    })).filter((g) => g.cards.length > 0);
-  }, [cards]);
+    return GROUP_ORDER.map((key) => {
+      const raw = map.get(key) ?? [];
+      return {
+        key,
+        cards: sortCards(raw, sort),
+        count: raw.reduce((s, c) => s + c.quantity, 0),
+      };
+    }).filter((g) => g.cards.length > 0);
+  }, [cards, sort]);
 
   const previewSrc = toReadableCardImage(preview?.imageUrl);
+  const gridClass =
+    view === "dense"
+      ? "grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6"
+      : "grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5";
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
@@ -93,7 +118,7 @@ export default function DeckVisualBrowser({
               />
             ) : (
               <div className="flex h-full items-center justify-center px-4 text-center text-sm text-foreground/40">
-                {preview ? preview.name : "Najedi myší na kartu"}
+                {preview ? preview.name : "Klikni / najedi na kartu"}
               </div>
             )}
           </div>
@@ -117,7 +142,34 @@ export default function DeckVisualBrowser({
         {sidebarExtra}
       </aside>
 
-      <div className="min-w-0 space-y-7">
+      <div className="min-w-0 space-y-5">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-card/50 px-3 py-2 text-xs">
+          <span className="text-foreground/45">View</span>
+          <select
+            value={view}
+            onChange={(e) => setView(e.target.value as ViewMode)}
+            className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-foreground/85"
+            aria-label="Zobrazení"
+          >
+            <option value="grid">Visual Grid</option>
+            <option value="dense">Dense Grid</option>
+          </select>
+          <span className="ml-2 text-foreground/45">Group</span>
+          <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-foreground/70">
+            Type
+          </span>
+          <span className="ml-2 text-foreground/45">Sort</span>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortMode)}
+            className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-foreground/85"
+            aria-label="Řazení"
+          >
+            <option value="name">Name</option>
+            <option value="cmc">CMC</option>
+          </select>
+        </div>
+
         {cards.length === 0 ? (
           <p className="text-sm text-foreground/55">{emptyMessage}</p>
         ) : (
@@ -129,16 +181,18 @@ export default function DeckVisualBrowser({
                   <span className="font-sans font-normal text-foreground/40">({group.count})</span>
                 </h3>
               </div>
-              <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+              <ul className={gridClass}>
                 {group.cards.map((card) => (
                   <li key={card.id}>
-                    <div
+                    <button
+                      type="button"
                       className={cn(
-                        "group relative rounded-xl transition",
+                        "group relative w-full rounded-xl text-left transition",
                         previewId === card.id && "ring-2 ring-primary/55"
                       )}
                       onMouseEnter={() => setPreviewId(card.id)}
                       onFocus={() => setPreviewId(card.id)}
+                      onClick={() => setPreviewId(card.id)}
                     >
                       <DeckCardTile
                         name={card.name}
@@ -151,13 +205,16 @@ export default function DeckVisualBrowser({
                         visual
                       />
                       {mode === "edit" && deckId ? (
-                        <div className="absolute right-1.5 top-1.5 z-10 opacity-0 transition group-hover:opacity-100">
+                        <div
+                          className="absolute right-1.5 top-1.5 z-10 opacity-0 transition group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="rounded-md bg-black/75 px-1.5 py-1">
                             <RemoveCardButton deckId={deckId} cardId={card.id} />
                           </div>
                         </div>
                       ) : null}
-                    </div>
+                    </button>
                   </li>
                 ))}
               </ul>

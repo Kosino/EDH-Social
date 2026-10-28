@@ -16,6 +16,9 @@ Platí pro existující i budoucí obrazovky.
 - Partner: kompaktně ve stejném toolbaru.
 - Autocomplete názvů přes Scryfall.
 - Odebrání karty: jemně na hover dlaždice (editor).
+- Chrome: taby Přehled / Editor / Import + WUBRG pips.
+- View controls: Visual/Dense grid, Group by Type, Sort Name/CMC.
+- Meta: přejmenovat / popis / public + smazání decku (editor sidebar).
 
 ## Co nedělat
 

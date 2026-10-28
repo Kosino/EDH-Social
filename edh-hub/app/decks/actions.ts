@@ -393,6 +393,82 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export async function updateDeckV2Meta(_prev: FormState, formData: FormData): Promise<FormState> {
+  const deckId = String(formData.get("deckId") ?? "");
+  if (!UUID.test(deckId)) return { error: "Neplatný deck." };
+
+  const auth = await requireBuilderUser(`/decks/v2/${deckId}/edit`);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+
+  const name = String(formData.get("name") ?? "").trim();
+  const format = String(formData.get("format") ?? "EDH").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+  const isPublic = formData.get("isPublic") === "on" || formData.get("isPublic") === "true";
+
+  if (name.length < 1 || name.length > 120) return { error: "Název: 1–120 znaků." };
+  if (format !== "EDH" && format !== "cEDH") return { error: "Neplatný formát." };
+  if (description && description.length > 1000) return { error: "Popis max 1000 znaků." };
+
+  const supabase = await createClient();
+  const { data: deck } = await supabase
+    .from("decks_v2")
+    .select("owner_id")
+    .eq("id", deckId)
+    .maybeSingle();
+
+  if (!deck || deck.owner_id !== auth.user.id) {
+    return { error: "Nemáš oprávnění upravovat tento deck." };
+  }
+
+  const { error } = await supabase
+    .from("decks_v2")
+    .update({
+      name,
+      format,
+      description,
+      is_public: isPublic,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", deckId);
+
+  if (error) return { error: dbError(error.message) };
+
+  revalidatePath(`/decks/v2/${deckId}`);
+  revalidatePath(`/decks/v2/${deckId}/edit`);
+  revalidatePath("/taverna/deckbuilder");
+  return null;
+}
+
+export async function deleteDeckV2(_prev: FormState, formData: FormData): Promise<FormState> {
+  const deckId = String(formData.get("deckId") ?? "");
+  if (!UUID.test(deckId)) return { error: "Neplatný deck." };
+
+  const auth = await requireBuilderUser(`/decks/v2/${deckId}/edit`);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+
+  const confirm = String(formData.get("confirm") ?? "").trim().toLowerCase();
+  if (confirm !== "smazat") {
+    return { error: "Pro smazání napiš do potvrzení „smazat“." };
+  }
+
+  const supabase = await createClient();
+  const { data: deck } = await supabase
+    .from("decks_v2")
+    .select("owner_id")
+    .eq("id", deckId)
+    .maybeSingle();
+
+  if (!deck || deck.owner_id !== auth.user.id) {
+    return { error: "Nemáš oprávnění smazat tento deck." };
+  }
+
+  const { error } = await supabase.from("decks_v2").delete().eq("id", deckId);
+  if (error) return { error: dbError(error.message) };
+
+  revalidatePath("/taverna/deckbuilder");
+  redirect("/taverna/deckbuilder");
+}
+
 /**
  * Modul 02 — import textového decklistu (Arena / Moxfield export).
  * Vyžaduje feature flag `deckbuilder_import`.

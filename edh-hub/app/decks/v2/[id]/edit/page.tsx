@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import AddCardForm from "@/components/deckbuilder/AddCardForm";
+import DeckChrome from "@/components/deckbuilder/DeckChrome";
 import DeckEditorWorkbench from "@/components/deckbuilder/DeckEditorWorkbench";
+import DeckMetaForm from "@/components/deckbuilder/DeckMetaForm";
 import DeckStatsPanel from "@/components/deckbuilder/DeckStatsPanel";
 import ImportDecklistForm from "@/components/deckbuilder/ImportDecklistForm";
 import PartnerForm from "@/components/deckbuilder/PartnerForm";
@@ -84,19 +86,26 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto max-w-6xl">
-      <Link href={`/decks/v2/${deck.id}`} className="text-sm text-primary hover:underline">
-        ← Detail decku
+      <Link href="/taverna/deckbuilder" className="text-sm text-primary hover:underline">
+        ← Deckbuilder
       </Link>
-      <h1 className="mt-4 font-display text-3xl font-bold">Editor: {deck.name}</h1>
-      <p className="mt-1 text-sm text-foreground/55">
-        {deck.format} · {deck.commanderName}
-        {deck.partnerName ? ` + ${deck.partnerName}` : ""} · {report.cardCount}/100 ·{" "}
-        <span className={report.legal ? "text-casual" : "text-red-300"}>
-          {report.legal ? "legální" : "nelegální"}
-        </span>
-      </p>
 
-      <div className="mt-6 flex flex-col gap-2 rounded-2xl border border-white/10 bg-card/70 p-3 lg:flex-row lg:items-start">
+      <div className="mt-4">
+        <DeckChrome
+          deckId={deck.id}
+          name={deck.name}
+          format={deck.format}
+          commanderName={deck.commanderName}
+          partnerName={deck.partnerName}
+          colorIdentity={deck.colorIdentity}
+          cardCount={report.cardCount}
+          legal={report.legal}
+          active="edit"
+          isOwner
+        />
+      </div>
+
+      <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-white/10 bg-card/70 p-3 lg:flex-row lg:items-start">
         <AddCardForm deckId={deck.id} />
         <PartnerForm deckId={deck.id} partnerName={deck.partnerName} />
       </div>
@@ -115,7 +124,18 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
         <DeckEditorWorkbench
           deckId={deck.id}
           cards={editorCards}
-          sidebarExtra={stats ? <DeckStatsPanel stats={stats} /> : null}
+          sidebarExtra={
+            <div className="space-y-4">
+              {stats ? <DeckStatsPanel stats={stats} /> : null}
+              <DeckMetaForm
+                deckId={deck.id}
+                name={deck.name}
+                format={deck.format}
+                description={deck.description}
+                isPublic={deck.isPublic}
+              />
+            </div>
+          }
         />
       </div>
 

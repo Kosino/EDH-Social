@@ -37,6 +37,20 @@ export default function DeckListGrid({ decks }: { decks: DeckV2ListItem[] }) {
                 <span>{formatRelativePrague(deck.updatedAt)}</span>
               </div>
             </Link>
+            <div className="mt-2 flex gap-2 px-1">
+              <Link
+                href={`/decks/v2/${deck.id}/edit`}
+                className="rounded-md border border-white/10 px-2.5 py-1 text-xs text-foreground/70 hover:border-primary/40 hover:text-primary"
+              >
+                Editor
+              </Link>
+              <Link
+                href={`/decks/v2/${deck.id}`}
+                className="rounded-md border border-white/10 px-2.5 py-1 text-xs text-foreground/70 hover:border-primary/40 hover:text-primary"
+              >
+                Přehled
+              </Link>
+            </div>
           </li>
         );
       })}
