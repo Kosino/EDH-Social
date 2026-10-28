@@ -212,6 +212,20 @@ export async function getMyRsvpEventIds(userId: string): Promise<string[]> {
   return ((data ?? []) as Array<{ event_id: string }>).map((row) => row.event_id);
 }
 
+export async function getRsvpCount(userId: string): Promise<number> {
+  if (!getSupabaseEnv()) return 0;
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("event_rsvps")
+    .select("event_id", { count: "exact", head: true })
+    .eq("user_id", userId);
+  if (error) {
+    console.error("RSVP count failed", error.code, error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 type EventRow = {
   id: string;
   title: string;

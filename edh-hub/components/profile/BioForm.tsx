@@ -15,9 +15,9 @@ export default function BioForm({ bio }: { bio: string | null }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 text-sm text-primary hover:underline"
+        className="mt-4 rounded-lg border border-primary px-3 py-1.5 text-sm text-primary transition hover:bg-primary/10"
       >
-        Upravit popis
+        Upravit profil
       </button>
     );
   }
