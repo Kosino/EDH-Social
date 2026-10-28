@@ -28,15 +28,17 @@ function sampleEventsAround(now = new Date()): HubEvent[] {
   };
 
   const sample = (
-    partial: Omit<HubEvent, "description" | "hostUsername" | "hostDisplayName" | "location"> & {
+    partial: Omit<HubEvent, "description" | "hostId" | "hostUsername" | "hostDisplayName" | "location"> & {
       location?: string | null;
       description?: string | null;
+      hostId?: string | null;
       hostUsername?: string | null;
       hostDisplayName?: string | null;
     }
   ): HubEvent => ({
     location: null,
     description: null,
+    hostId: null,
     hostUsername: "kosino",
     hostDisplayName: "Kosino",
     ...partial,

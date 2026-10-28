@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import EventKindIcon from "@/components/events/EventKindIcon";
-import { toggleRsvp } from "@/app/create/actions";
+import { deleteEvent, toggleRsvp } from "@/app/create/actions";
 import { eventTypeStyle } from "@/lib/brand";
 import { getCurrentUser } from "@/lib/supabase/session";
 import {
@@ -59,6 +59,7 @@ export default async function EventDetailPage({
   const style = eventTypeStyle(event.eventType);
   const user = await getCurrentUser();
   const joined = user ? (await getMyRsvpEventIds(user.id)).includes(event.id) : false;
+  const isHost = Boolean(user && event.hostId && user.id === event.hostId);
   const attendees = await getEventAttendees(event.id);
   const returnTo = `/events/${event.id}`;
   const countdown = formatEventCountdown(event.startsAt);
@@ -118,22 +119,35 @@ export default async function EventDetailPage({
             )}
           </div>
 
-          {user ? (
-            <form action={toggleRsvp}>
-              <input type="hidden" name="eventId" value={event.id} />
-              <input type="hidden" name="returnTo" value={returnTo} />
-              <button className={cn("rounded-lg border px-5 py-2 text-sm font-medium", style.border)}>
-                {joined ? "Odhlásit" : "Přidat se"}
-              </button>
-            </form>
-          ) : (
-            <Link
-              href={`/login?next=${encodeURIComponent(returnTo)}`}
-              className={cn("rounded-lg border px-5 py-2 text-sm font-medium", style.border)}
-            >
-              Přidat se
-            </Link>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {user ? (
+              <form action={toggleRsvp}>
+                <input type="hidden" name="eventId" value={event.id} />
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <button className={cn("rounded-lg border px-5 py-2 text-sm font-medium", style.border)}>
+                  {joined ? "Odhlásit" : "Přidat se"}
+                </button>
+              </form>
+            ) : (
+              <Link
+                href={`/login?next=${encodeURIComponent(returnTo)}`}
+                className={cn("rounded-lg border px-5 py-2 text-sm font-medium", style.border)}
+              >
+                Přidat se
+              </Link>
+            )}
+            {isHost ? (
+              <form action={deleteEvent}>
+                <input type="hidden" name="eventId" value={event.id} />
+                <button
+                  type="submit"
+                  className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+                >
+                  Smazat event
+                </button>
+              </form>
+            ) : null}
+          </div>
         </div>
       </div>
 

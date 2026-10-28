@@ -72,20 +72,24 @@ export async function createDeck(_prev: FormState, formData: FormData): Promise<
   if (!parsed.ok) return { error: parsed.error };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("decks").insert({
-    owner_id: auth.user.id,
-    name: parsed.value.name,
-    format: parsed.value.format,
-    commander: parsed.value.commander,
-    moxfield_url: parsed.value.moxfieldUrl,
-  });
+  const { data, error } = await supabase
+    .from("decks")
+    .insert({
+      owner_id: auth.user.id,
+      name: parsed.value.name,
+      format: parsed.value.format,
+      commander: parsed.value.commander,
+      moxfield_url: parsed.value.moxfieldUrl,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    console.error("createDeck", error.code, error.message);
-    return { error: dbError(error.message) };
+  if (error || !data?.id) {
+    console.error("createDeck", error?.code, error?.message);
+    return { error: dbError(error?.message ?? "") };
   }
 
-  redirect(`/profile/${auth.user.username}`);
+  redirect(`/decks/${data.id}`);
 }
 
 export async function createEvent(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -175,4 +179,54 @@ export async function toggleRsvp(formData: FormData) {
   }
 
   redirect(back);
+}
+
+export async function deleteDeck(formData: FormData) {
+  const user = await getCurrentUser();
+  const username = String(formData.get("username") ?? "");
+  const back = username ? `/profile/${username}` : "/";
+  if (!user) redirect(`/login?next=${encodeURIComponent(back)}`);
+
+  const deckId = String(formData.get("deckId") ?? "");
+  if (!UUID.test(deckId)) redirect(back);
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("decks").delete().eq("id", deckId).eq("owner_id", user.id);
+  if (error) {
+    console.error("deleteDeck", error.code, error.message);
+  }
+  redirect(back);
+}
+
+export async function deletePost(formData: FormData) {
+  const user = await getCurrentUser();
+  const kind = String(formData.get("kind") ?? "post") === "article" ? "article" : "post";
+  const back = kind === "article" ? "/articles" : "/";
+  if (!user) redirect(`/login?next=${encodeURIComponent(back)}`);
+
+  const postId = String(formData.get("postId") ?? "");
+  if (!UUID.test(postId)) redirect(back);
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("posts").delete().eq("id", postId).eq("author_id", user.id);
+  if (error) {
+    console.error("deletePost", error.code, error.message);
+  }
+  redirect(back);
+}
+
+export async function deleteEvent(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?next=/events");
+
+  const eventId = String(formData.get("eventId") ?? "");
+  if (!UUID.test(eventId)) redirect("/events");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("events").delete().eq("id", eventId).eq("host_id", user.id);
+  if (error) {
+    console.error("deleteEvent", error.code, error.message);
+    redirect(`/events/${eventId}?error=${encodeURIComponent("Smazání eventu se nepovedlo.")}`);
+  }
+  redirect("/events");
 }

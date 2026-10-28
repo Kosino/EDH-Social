@@ -147,9 +147,10 @@ function DeckCard({ deck, tone }: { deck: ProfileDeck; tone: number }) {
         : "bg-casual/20 text-casual";
 
   return (
-    <div
+    <Link
+      href={`/decks/${deck.id}`}
       className={cn(
-        "animate-fade-rise flex flex-col rounded-xl border border-white/10 bg-gradient-to-b p-3",
+        "animate-fade-rise flex flex-col rounded-xl border border-white/10 bg-gradient-to-b p-3 transition hover:border-primary/40",
         TONES[tone] ?? TONES[0]
       )}
     >
@@ -159,17 +160,10 @@ function DeckCard({ deck, tone }: { deck: ProfileDeck; tone: number }) {
       <h3 className="font-display text-sm font-semibold leading-snug">{deck.name}</h3>
       <p className="mt-1 text-xs text-foreground/60">{deck.commander}</p>
       {deck.moxfieldUrl ? (
-        <a
-          href={deck.moxfieldUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-auto pt-3 text-xs text-primary hover:underline"
-        >
-          Moxfield →
-        </a>
+        <span className="mt-auto pt-3 text-xs text-primary">Moxfield →</span>
       ) : (
         <p className="mt-auto pt-3 text-xs text-foreground/35">Bez Moxfield</p>
       )}
-    </div>
+    </Link>
   );
 }

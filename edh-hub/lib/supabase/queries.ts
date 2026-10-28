@@ -16,6 +16,7 @@ export type FeedPost = {
   body: string | null;
   deckName: string | null;
   kind: PostKind;
+  authorId: string;
   author: string;
   authorUsername: string;
   createdAt: string;
@@ -27,6 +28,13 @@ export type ProfileDeck = {
   format: string;
   commander: string;
   moxfieldUrl: string | null;
+};
+
+export type DeckView = ProfileDeck & {
+  ownerId: string;
+  ownerUsername: string;
+  ownerDisplayName: string;
+  createdAt: string;
 };
 
 export type ProfileView = {
@@ -44,6 +52,7 @@ export type HubEvent = {
   startsAt: string;
   location: string | null;
   description: string | null;
+  hostId: string | null;
   hostUsername: string | null;
   hostDisplayName: string | null;
 };
@@ -105,6 +114,7 @@ type PostRow = {
   deck_name: string | null;
   kind?: string | null;
   created_at: string;
+  author_id: string;
   author: { username: string } | { username: string }[] | null;
 };
 
@@ -118,6 +128,7 @@ function mapPost(row: PostRow): FeedPost {
     body: row.body,
     deckName: row.deck_name,
     kind,
+    authorId: row.author_id,
     author: publicName(username),
     authorUsername: username,
     createdAt: row.created_at,
@@ -125,7 +136,7 @@ function mapPost(row: PostRow): FeedPost {
 }
 
 const POST_SELECT =
-  "id, title, excerpt, body, deck_name, kind, created_at, author:profiles!posts_author_id_fkey(username)";
+  "id, title, excerpt, body, deck_name, kind, created_at, author_id, author:profiles!posts_author_id_fkey(username)";
 
 async function listPostsByKind(kind: PostKind): Promise<QueryResult<FeedPost[]>> {
   if (!getSupabaseEnv()) return { status: "unconfigured" };
@@ -216,6 +227,50 @@ export async function getProfile(username: string): Promise<QueryResult<ProfileV
   };
 }
 
+export async function getDeck(id: string): Promise<QueryResult<DeckView | null>> {
+  if (!getSupabaseEnv()) return { status: "unconfigured" };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("decks")
+    .select(
+      "id, name, format, commander, moxfield_url, created_at, owner_id, owner:profiles!decks_owner_id_fkey(username, display_name)"
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) return failure(error);
+  if (!data) return { status: "ok", data: null };
+
+  const row = data as {
+    id: string;
+    name: string;
+    format: string;
+    commander: string;
+    moxfield_url: string | null;
+    created_at: string;
+    owner_id: string;
+    owner: { username: string; display_name: string | null } | { username: string; display_name: string | null }[] | null;
+  };
+  const owner = Array.isArray(row.owner) ? row.owner[0] : row.owner;
+  const ownerUsername = owner?.username ?? "hráč";
+
+  return {
+    status: "ok",
+    data: {
+      id: row.id,
+      name: row.name,
+      format: row.format,
+      commander: row.commander,
+      moxfieldUrl: row.moxfield_url,
+      ownerId: row.owner_id,
+      ownerUsername,
+      ownerDisplayName: publicName(ownerUsername, owner?.display_name),
+      createdAt: row.created_at,
+    },
+  };
+}
+
 export async function getMyRsvpEventIds(userId: string): Promise<string[]> {
   if (!getSupabaseEnv()) return [];
   const supabase = await createClient();
@@ -250,13 +305,14 @@ type EventRow = {
   starts_at: string;
   location: string | null;
   description?: string | null;
+  host_id?: string | null;
   host?: ProfileRef;
 };
 
 const EVENT_SELECT_FULL =
-  "id, title, event_type, starts_at, location, description, host:profiles!events_host_id_fkey(username, display_name)";
+  "id, title, event_type, starts_at, location, description, host_id, host:profiles!events_host_id_fkey(username, display_name)";
 const EVENT_SELECT_BASE =
-  "id, title, event_type, starts_at, location, host:profiles!events_host_id_fkey(username, display_name)";
+  "id, title, event_type, starts_at, location, host_id, host:profiles!events_host_id_fkey(username, display_name)";
 
 function profileFrom(ref: ProfileRef): { username: string | null; displayName: string | null } {
   if (!ref) return { username: null, displayName: null };
@@ -277,6 +333,7 @@ function mapEvent(row: EventRow): HubEvent {
     startsAt: row.starts_at,
     location: row.location,
     description: row.description ?? null,
+    hostId: row.host_id ?? null,
     hostUsername: host.username,
     hostDisplayName: host.displayName,
   };
