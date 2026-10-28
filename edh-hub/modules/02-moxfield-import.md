@@ -17,8 +17,13 @@
 - Flag `deckbuilder_import` (default off) in migraci
 - Editor hint na `/decks/v2/[id]/edit`
 
-## Next implementation steps
+## Implemented
 
-1. Server Action `importDecklist` (text → resolve Scryfall → `deck_cards`)
-2. Optional Moxfield deck URL fetch when API reachable
-3. UI form behind `isFeatureEnabled('deckbuilder_import')`
+1. Server Action `importDecklist` — text → Scryfall resolve → `deck_cards`
+2. UI `ImportDecklistForm` na `/decks/v2/[id]/edit` (za flagem)
+3. SQL `20261029130000_enable_deckbuilder_import.sql`
+
+## Later
+
+- Přímý fetch Moxfield deck URL (API často Cloudflare-blocked)
+- Import z profile Moxfield user URL

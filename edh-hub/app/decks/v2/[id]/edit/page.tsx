@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
 import AddCardForm from "@/components/deckbuilder/AddCardForm";
 import DeckCardTile from "@/components/deckbuilder/DeckCardTile";
+import ImportDecklistForm from "@/components/deckbuilder/ImportDecklistForm";
 import RemoveCardButton from "@/components/deckbuilder/RemoveCardButton";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { evaluateDeckLegality } from "@/lib/deckbuilder/legality";
@@ -19,6 +20,7 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(`/decks/v2/${id}/edit`)}`);
 
+  const importOn = await isFeatureEnabled("deckbuilder_import");
   const result = await getDeckV2(id);
   if (result.status === "error") {
     return (
@@ -62,11 +64,15 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
       <div className="mt-8 grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)]">
         <div className="space-y-4">
           <AddCardForm deckId={deck.id} />
-          <p className="rounded-xl border border-dashed border-white/15 px-3 py-3 text-xs text-foreground/45">
-            Modul 02 (import Moxfield / text list) připravený ve{" "}
-            <code className="text-foreground/60">lib/deckbuilder/import.ts</code> — zapne se flagem{" "}
-            <code className="text-foreground/60">deckbuilder_import</code>.
-          </p>
+          {importOn ? (
+            <ImportDecklistForm deckId={deck.id} />
+          ) : (
+            <p className="rounded-xl border border-dashed border-white/15 px-3 py-3 text-xs text-foreground/45">
+              Import decklistu (Modul 02) je vypnutý. Zapni flag{" "}
+              <code className="text-foreground/60">deckbuilder_import</code> v{" "}
+              <code className="text-foreground/60">feature_flags</code>.
+            </p>
+          )}
         </div>
         <div className="space-y-3">
           {report.issues.length > 0 ? (

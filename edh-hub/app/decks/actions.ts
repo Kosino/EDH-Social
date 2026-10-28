@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
+import { parseDecklistText } from "@/lib/deckbuilder/import";
 import { normalizeColorIdentity } from "@/lib/deckbuilder/legality";
 import { resolveCardByName } from "@/lib/deckbuilder/scryfall-card";
 import { safeNext } from "@/lib/redirect";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 
-export type FormState = { error: string } | null;
+export type FormState = { error: string; message?: string } | null;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -229,3 +230,148 @@ export async function removeCardFromDeck(_prev: FormState, formData: FormData): 
   revalidatePath(`/decks/v2/${deckId}/edit`);
   return null;
 }
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Modul 02 — import textového decklistu (Arena / Moxfield export).
+ * Vyžaduje feature flag `deckbuilder_import`.
+ */
+export async function importDecklist(_prev: FormState, formData: FormData): Promise<FormState> {
+  const deckId = String(formData.get("deckId") ?? "");
+  if (!UUID.test(deckId)) return { error: "Neplatný deck." };
+
+  const importOn = await isFeatureEnabled("deckbuilder_import");
+  if (!importOn) {
+    return {
+      error:
+        "Import je vypnutý (flag deckbuilder_import). V SQL: update feature_flags set enabled = true where key = 'deckbuilder_import';",
+    };
+  }
+
+  const auth = await requireBuilderUser(`/decks/v2/${deckId}/edit`);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+
+  const raw = String(formData.get("decklist") ?? "");
+  if (raw.trim().length < 3) return { error: "Vlož textový decklist." };
+
+  const replaceMain = formData.get("replaceMain") === "on" || formData.get("replaceMain") === "true";
+
+  const parsed = parseDecklistText(raw);
+  if (parsed.length === 0) return { error: "V listu nejsou žádné karty." };
+
+  const merged = new Map<string, (typeof parsed)[number]>();
+  for (const line of parsed) {
+    const key = `${line.board}::${line.name.toLowerCase()}`;
+    const prev = merged.get(key);
+    if (prev) prev.quantity = Math.min(99, prev.quantity + line.quantity);
+    else merged.set(key, { ...line });
+  }
+  const lines = Array.from(merged.values());
+  if (lines.length > 120) {
+    return { error: `List má ${lines.length} unikátních řádků — max 120 na jeden import.` };
+  }
+
+  const supabase = await createClient();
+  const { data: deck } = await supabase
+    .from("decks_v2")
+    .select("owner_id")
+    .eq("id", deckId)
+    .maybeSingle();
+
+  if (!deck || deck.owner_id !== auth.user.id) {
+    return { error: "Nemáš oprávnění upravovat tento deck." };
+  }
+
+  if (replaceMain) {
+    const { error } = await supabase
+      .from("deck_cards")
+      .delete()
+      .eq("deck_id", deckId)
+      .eq("board", "main");
+    if (error) return { error: dbError(error.message) };
+  }
+
+  let imported = 0;
+  let failed = 0;
+
+  for (const line of lines) {
+    const resolved = await resolveCardByName(line.name);
+    await sleep(55);
+    if (!resolved) {
+      failed += 1;
+      continue;
+    }
+
+    const { data: existing } = await supabase
+      .from("deck_cards")
+      .select("id, quantity")
+      .eq("deck_id", deckId)
+      .eq("name", resolved.name)
+      .eq("board", line.board)
+      .maybeSingle();
+
+    if (existing?.id) {
+      const nextQty = replaceMain
+        ? line.quantity
+        : Math.min(99, Number(existing.quantity) + line.quantity);
+      const { error } = await supabase
+        .from("deck_cards")
+        .update({ quantity: nextQty })
+        .eq("id", existing.id);
+      if (error) failed += 1;
+      else imported += 1;
+    } else {
+      const { error } = await supabase.from("deck_cards").insert({
+        deck_id: deckId,
+        scryfall_id: resolved.scryfallId,
+        name: resolved.name,
+        quantity: line.quantity,
+        board: line.board,
+        mana_cost: resolved.manaCost,
+        type_line: resolved.typeLine,
+        oracle_text: resolved.oracleText,
+        color_identity: resolved.colorIdentity,
+        image_url: resolved.imageUrl,
+        is_basic_land: resolved.isBasicLand,
+      });
+      if (error) failed += 1;
+      else imported += 1;
+    }
+
+    if (resolved.scryfallId) {
+      await supabase.from("card_cache").upsert({
+        scryfall_id: resolved.scryfallId,
+        name: resolved.name,
+        mana_cost: resolved.manaCost,
+        type_line: resolved.typeLine,
+        oracle_text: resolved.oracleText,
+        color_identity: resolved.colorIdentity,
+        image_url: resolved.imageUrl,
+        is_basic_land: resolved.isBasicLand,
+        legalities: resolved.legalities,
+        updated_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  await supabase
+    .from("decks_v2")
+    .update({ updated_at: new Date().toISOString() })
+    .eq("id", deckId);
+
+  revalidatePath(`/decks/v2/${deckId}`);
+  revalidatePath(`/decks/v2/${deckId}/edit`);
+
+  if (imported === 0) {
+    return { error: `Import selhal (0 karet). Neúspěšných: ${failed}.` };
+  }
+
+  return {
+    error: "",
+    message: `Importováno ${imported} karet${failed ? `, neúspěšných ${failed}` : ""}.`,
+  };
+}
+
