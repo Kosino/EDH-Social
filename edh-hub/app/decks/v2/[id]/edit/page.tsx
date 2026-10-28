@@ -112,21 +112,28 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
       ) : null}
 
       <div className="mt-6">
-        <DeckEditorWorkbench deckId={deck.id} cards={editorCards} />
+        <DeckEditorWorkbench
+          deckId={deck.id}
+          cards={editorCards}
+          sidebarExtra={stats ? <DeckStatsPanel stats={stats} /> : null}
+        />
       </div>
 
-      <div className="mt-8 grid gap-4 lg:grid-cols-2">
-        {importOn ? (
-          <ImportDecklistForm deckId={deck.id} />
-        ) : (
-          <p className="rounded-xl border border-dashed border-white/15 px-3 py-3 text-xs text-foreground/45">
-            Import decklistu (Modul 02) je vypnutý. Zapni flag{" "}
-            <code className="text-foreground/60">deckbuilder_import</code> v{" "}
-            <code className="text-foreground/60">feature_flags</code>.
-          </p>
-        )}
-        {stats ? <DeckStatsPanel stats={stats} /> : null}
-      </div>
+      <details className="mt-8 rounded-2xl border border-white/10 bg-card/50 open:pb-4">
+        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-foreground/80 marker:content-none [&::-webkit-details-marker]:hidden">
+          Importovat seznam{" "}
+          <span className="text-foreground/40">(text / Arena / Moxfield export)</span>
+        </summary>
+        <div className="border-t border-white/10 px-4 pt-4">
+          {importOn ? (
+            <ImportDecklistForm deckId={deck.id} showTitle={false} />
+          ) : (
+            <p className="text-xs text-foreground/45">
+              Flag <code className="text-foreground/60">deckbuilder_import</code> je vypnutý.
+            </p>
+          )}
+        </div>
+      </details>
     </div>
   );
 }

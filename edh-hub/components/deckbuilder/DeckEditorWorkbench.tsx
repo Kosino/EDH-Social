@@ -1,157 +1,29 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import DeckCardTile from "@/components/deckbuilder/DeckCardTile";
-import RemoveCardButton from "@/components/deckbuilder/RemoveCardButton";
-import { classifyTypeLine, type CardTypeCategory } from "@/lib/deckbuilder/stats";
-import { toReadableCardImage } from "@/lib/deckbuilder/card-image";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
+import DeckVisualBrowser, {
+  type DeckBrowserCard,
+} from "@/components/deckbuilder/DeckVisualBrowser";
 
-export type EditorCard = {
-  id: string;
-  name: string;
-  quantity: number;
-  board: "main" | "commander" | "sideboard";
-  manaCost: string | null;
-  typeLine: string | null;
-  imageUrl: string | null;
-  isBasicLand: boolean;
-  illegal: boolean;
-  reasons?: string[];
-};
+export type EditorCard = DeckBrowserCard;
 
-const GROUP_ORDER: Array<CardTypeCategory | "Commander" | "Sideboard"> = [
-  "Commander",
-  "Creature",
-  "Planeswalker",
-  "Instant",
-  "Sorcery",
-  "Artifact",
-  "Enchantment",
-  "Battle",
-  "Land",
-  "Other",
-  "Sideboard",
-];
-
-function groupKey(card: EditorCard): CardTypeCategory | "Commander" | "Sideboard" {
-  if (card.board === "commander") return "Commander";
-  if (card.board === "sideboard") return "Sideboard";
-  return classifyTypeLine(card.typeLine, card.isBasicLand);
-}
-
+/** Editor wrapper — Moxfield-like visual browser with remove-on-hover. */
 export default function DeckEditorWorkbench({
   deckId,
   cards,
+  sidebarExtra,
 }: {
   deckId: string;
   cards: EditorCard[];
+  sidebarExtra?: ReactNode;
 }) {
-  const initial = cards[0] ?? null;
-  const [previewId, setPreviewId] = useState<string | null>(initial?.id ?? null);
-
-  const preview = useMemo(() => {
-    if (!cards.length) return null;
-    return cards.find((c) => c.id === previewId) ?? cards[0];
-  }, [cards, previewId]);
-
-  const groups = useMemo(() => {
-    const map = new Map<string, EditorCard[]>();
-    for (const card of cards) {
-      const key = groupKey(card);
-      const list = map.get(key) ?? [];
-      list.push(card);
-      map.set(key, list);
-    }
-    return GROUP_ORDER.map((key) => ({
-      key,
-      cards: map.get(key) ?? [],
-    })).filter((g) => g.cards.length > 0);
-  }, [cards]);
-
-  const previewSrc = toReadableCardImage(preview?.imageUrl);
-
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
-      <aside className="lg:sticky lg:top-6 lg:self-start">
-        <div className="rounded-2xl border border-white/10 bg-card/80 p-3">
-          <div className="relative mx-auto aspect-[5/7] w-full max-w-[260px] overflow-hidden rounded-xl bg-gradient-to-b from-primary/20 to-white/[0.03]">
-            {previewSrc ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={previewSrc}
-                alt={preview?.name ?? ""}
-                className="h-full w-full object-contain"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-foreground/40">
-                {preview ? preview.name : "Najedi myší na kartu v seznamu"}
-              </div>
-            )}
-          </div>
-          {preview ? (
-            <div className="mt-3 space-y-1 px-1">
-              <p className="font-display text-sm font-semibold leading-snug">{preview.name}</p>
-              {preview.manaCost ? (
-                <p className="text-xs text-foreground/50">{preview.manaCost}</p>
-              ) : null}
-              {preview.typeLine ? (
-                <p className="text-xs text-foreground/45">{preview.typeLine}</p>
-              ) : null}
-              {preview.illegal ? (
-                <p className="text-xs text-red-300">{preview.reasons?.[0] ?? "Nelegální"}</p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-3 text-xs text-foreground/40">Zatím žádné karty k náhledu.</p>
-          )}
-        </div>
-      </aside>
-
-      <div className="min-w-0 space-y-6">
-        {cards.length === 0 ? (
-          <p className="text-sm text-foreground/55">Zatím žádné karty — přidej je v řádku nahoře.</p>
-        ) : (
-          groups.map((group) => (
-            <section key={group.key}>
-              <h3 className="mb-3 font-display text-sm font-semibold text-foreground/80">
-                {group.key}{" "}
-                <span className="font-sans text-foreground/40">({group.cards.length})</span>
-              </h3>
-              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-                {group.cards.map((card) => (
-                  <li key={card.id}>
-                    <div
-                      className={cn(
-                        "group relative rounded-xl transition",
-                        previewId === card.id && "ring-2 ring-primary/60"
-                      )}
-                      onMouseEnter={() => setPreviewId(card.id)}
-                      onFocus={() => setPreviewId(card.id)}
-                    >
-                      <DeckCardTile
-                        name={card.name}
-                        quantity={card.quantity}
-                        manaCost={card.manaCost}
-                        typeLine={card.typeLine}
-                        imageUrl={card.imageUrl}
-                        illegal={card.illegal}
-                        reasons={card.reasons}
-                        visual
-                      />
-                      <div className="absolute right-2 top-2 z-10 opacity-0 transition group-hover:opacity-100">
-                        <div className="rounded-md bg-black/70 px-1.5 py-1">
-                          <RemoveCardButton deckId={deckId} cardId={card.id} />
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))
-        )}
-      </div>
-    </div>
+    <DeckVisualBrowser
+      deckId={deckId}
+      cards={cards}
+      mode="edit"
+      emptyMessage="Zatím žádné karty — přidej je v řádku nahoře."
+      sidebarExtra={sidebarExtra}
+    />
   );
 }
