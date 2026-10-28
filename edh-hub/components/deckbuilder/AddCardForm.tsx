@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import SubmitButton from "@/components/auth/SubmitButton";
 import { Field, fieldClass, FormError } from "@/components/forms/fields";
+import ScryfallCardInput from "@/components/deckbuilder/ScryfallCardInput";
 import { addCardToDeck } from "@/app/decks/actions";
 
 export default function AddCardForm({ deckId }: { deckId: string }) {
@@ -13,8 +14,8 @@ export default function AddCardForm({ deckId }: { deckId: string }) {
       <input type="hidden" name="deckId" value={deckId} />
       <h3 className="font-display text-sm font-semibold">Přidat kartu</h3>
       <FormError error={state?.error} />
-      <Field label="Jméno karty">
-        <input name="cardName" required className={fieldClass} placeholder="Sol Ring" />
+      <Field label="Jméno karty" hint="Živé hledání přes Scryfall.">
+        <ScryfallCardInput name="cardName" required placeholder="Sol Ring" />
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Počet">

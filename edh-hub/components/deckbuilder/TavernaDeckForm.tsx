@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import SubmitButton from "@/components/auth/SubmitButton";
 import { Field, fieldClass, FormError } from "@/components/forms/fields";
+import ScryfallCardInput from "@/components/deckbuilder/ScryfallCardInput";
 import { createDeck } from "@/app/decks/actions";
 
 export default function TavernaDeckForm() {
@@ -21,17 +22,23 @@ export default function TavernaDeckForm() {
           <option value="cEDH">cEDH</option>
         </select>
       </Field>
-      <Field label="Commander" hint="Jméno karty — dohledáme na Scryfallu.">
-        <input name="commander" required maxLength={160} className={fieldClass} placeholder="např. Tymna the Weaver" />
+      <Field label="Commander" hint="Živé hledání commanderů na Scryfallu.">
+        <ScryfallCardInput
+          name="commander"
+          required
+          maxLength={160}
+          mode="commander"
+          placeholder="např. Tymna the Weaver"
+        />
       </Field>
       <Field
         label="Partner"
         hint="Volitelné. Druhý commander (Partner / Partner with / Friends forever)."
       >
-        <input
+        <ScryfallCardInput
           name="partner"
           maxLength={160}
-          className={fieldClass}
+          mode="commander"
           placeholder="např. Thrasios, Triton Hero"
         />
       </Field>
