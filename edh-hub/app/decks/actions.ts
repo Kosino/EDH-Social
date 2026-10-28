@@ -369,9 +369,6 @@ export async function importDecklist(_prev: FormState, formData: FormData): Prom
     return { error: `Import selhal (0 karet). Neúspěšných: ${failed}.` };
   }
 
-  return {
-    error: "",
-    message: `Importováno ${imported} karet${failed ? `, neúspěšných ${failed}` : ""}.`,
-  };
+  redirect(`/decks/v2/${deckId}/edit`);
 }
 

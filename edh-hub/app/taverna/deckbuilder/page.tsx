@@ -27,17 +27,24 @@ export default async function DeckbuilderDashboardPage() {
           <p className="text-xs font-medium uppercase tracking-wider text-accent">Taverna u Kosa</p>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Deckbuilder</h1>
           <p className="mt-2 text-sm text-foreground/55">
-            Stavěj EDH / cEDH decky, přidávej karty a sleduj legalitu. Import textového listu je
-            v editoru decku (po vytvoření → Upravit).
+            Stavěj EDH / cEDH decky, přidávej karty a sleduj legalitu.
           </p>
         </div>
         {user && flagOn ? (
-          <Link
-            href="/decks/new"
-            className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90"
-          >
-            + Nový deck
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/taverna/deckbuilder/import"
+              className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-foreground/85 hover:border-primary/40"
+            >
+              Importovat seznam
+            </Link>
+            <Link
+              href="/decks/new"
+              className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90"
+            >
+              + Nový deck
+            </Link>
+          </div>
         ) : null}
       </div>
 

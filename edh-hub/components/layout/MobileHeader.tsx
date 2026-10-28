@@ -34,6 +34,7 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
         <Link href="/articles">Články</Link>
         <Link href="/taverna">Taverna</Link>
         <Link href="/taverna/deckbuilder">Deckbuilder</Link>
+        <Link href="/taverna/deckbuilder/import">Importovat seznam</Link>
         {user?.username ? <Link href={`/profile/${user.username}`}>Profil</Link> : null}
         {showAdmin ? <Link href="/admin">Admin</Link> : null}
         {user ? <Link href="/posts/new">Příspěvek</Link> : null}

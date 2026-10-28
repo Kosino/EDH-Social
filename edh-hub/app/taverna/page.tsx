@@ -30,6 +30,18 @@ export default async function TavernaDashboardPage() {
             <span className="mt-3 inline-block text-sm text-primary">Otevřít →</span>
           </Link>
         </li>
+        <li>
+          <Link
+            href="/taverna/deckbuilder/import"
+            className="block rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/40"
+          >
+            <h2 className="font-display text-xl font-semibold">Importovat seznam</h2>
+            <p className="mt-1 text-sm text-foreground/55">
+              Nahraj textový decklist (Arena / Moxfield export) do existujícího decku.
+            </p>
+            <span className="mt-3 inline-block text-sm text-primary">Import →</span>
+          </Link>
+        </li>
       </ul>
     </div>
   );

@@ -14,6 +14,7 @@ import {
   Shield,
   Beer,
   Layers,
+  Upload,
 } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import TreeMark from "@/components/brand/TreeMark";
@@ -87,10 +88,17 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
               icon={<Layers size={16} />}
               label="Deckbuilder"
               active={
-                pathname.startsWith("/taverna/deckbuilder") ||
+                pathname === "/taverna/deckbuilder" ||
                 pathname.startsWith("/decks/new") ||
                 pathname.startsWith("/decks/v2")
               }
+              compact
+            />
+            <NavItem
+              href="/taverna/deckbuilder/import"
+              icon={<Upload size={16} />}
+              label="Importovat seznam"
+              active={pathname.startsWith("/taverna/deckbuilder/import")}
               compact
             />
           </div>
