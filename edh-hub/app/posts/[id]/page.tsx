@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import DataNotice from "@/components/DataNotice";
+import { feedTopicChip } from "@/lib/brand";
 import { getPost } from "@/lib/supabase/queries";
-import { formatRelativePrague } from "@/lib/utils";
+import { cn, formatRelativePrague } from "@/lib/utils";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -10,7 +11,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
   if (result.status === "error") {
     return (
-      <div className="max-w-3xl">
+      <div className="mx-auto max-w-3xl">
         <DataNotice message={result.message} />
         <Link href="/" className="text-sm text-primary hover:underline">
           Zpět na feed
@@ -21,26 +22,49 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
   if (result.status !== "ok" || !result.data) notFound();
 
+  if (result.data.kind === "article") {
+    redirect(`/articles/${result.data.id}`);
+  }
+
   const post = result.data;
+  const topic = feedTopicChip({ title: post.title, deckName: post.deckName });
+  const initial = post.author.slice(0, 1).toUpperCase();
 
   return (
-    <article className="max-w-3xl">
+    <article className="mx-auto max-w-3xl">
       <Link href="/" className="text-sm text-primary hover:underline">
         ← Feed
       </Link>
-      <div className="mb-6 mt-4 flex items-center gap-3 text-sm text-foreground/60">
-        <div className="h-8 w-8 rounded-full bg-primary/30" />
-        <span>{post.author}</span>
-        <span>•</span>
-        <span>{formatRelativePrague(post.createdAt)}</span>
+      <div className="mb-6 mt-6 flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
+          {initial}
+        </div>
+        <div>
+          {post.authorUsername !== "hráč" ? (
+            <Link
+              href={`/profile/${post.authorUsername}`}
+              className="font-medium text-foreground hover:text-primary"
+            >
+              {post.author}
+            </Link>
+          ) : (
+            <span className="font-medium">{post.author}</span>
+          )}
+          <p className="text-xs text-foreground/45">{formatRelativePrague(post.createdAt)}</p>
+        </div>
       </div>
-      <h1 className="text-3xl font-bold">{post.title}</h1>
-      {post.deckName && (
-        <p className="mt-4 inline-block rounded bg-primary/20 px-2 py-1 text-xs text-primary">
-          Deck: {post.deckName}
-        </p>
-      )}
-      <div className="mt-6 whitespace-pre-wrap text-sm leading-6 text-foreground/80">
+      <h1 className="font-display text-3xl font-bold leading-tight">{post.title}</h1>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium", topic.className)}>
+          {topic.label}
+        </span>
+        {post.deckName ? (
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] text-foreground/70">
+            Deck: {post.deckName}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-8 whitespace-pre-wrap rounded-2xl border border-white/10 bg-card p-6 text-sm leading-7 text-foreground/80">
         {post.body || post.excerpt || "Příspěvek nemá text."}
       </div>
     </article>

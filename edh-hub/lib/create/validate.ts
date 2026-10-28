@@ -1,16 +1,19 @@
+import { EVENT_KINDS, isEventKind, type EventKind } from "@/lib/events";
 import { pragueLocalToUtc } from "@/lib/utils";
 
 const FORMATS = ["EDH", "cEDH"] as const;
-const EVENT_TYPES = ["Competitive", "Casual", "Online"] as const;
 
 export type DeckFormat = (typeof FORMATS)[number];
-export type EventType = (typeof EVENT_TYPES)[number];
+export type EventType = EventKind;
+
+export type PostKind = "post" | "article";
 
 export type PostInput = {
   title: string;
   body: string;
   excerpt: string;
   deckName: string | null;
+  kind: PostKind;
 };
 
 export type DeckInput = {
@@ -42,9 +45,16 @@ export function parsePost(formData: FormData): { ok: true; value: PostInput } | 
   const body = text(formData.get("body"));
   const excerptField = text(formData.get("excerpt"));
   const deckName = text(formData.get("deckName"));
+  const kindRaw = text(formData.get("kind")) || "post";
+  const kind: PostKind = kindRaw === "article" ? "article" : "post";
 
   if (title.length < 1 || title.length > 160) return { ok: false, error: "Nadpis musí mít 1–160 znaků." };
-  if (body.length < 1 || body.length > 8000) return { ok: false, error: "Text příspěvku musí mít 1–8000 znaků." };
+  if (body.length < 1 || body.length > 8000) {
+    return {
+      ok: false,
+      error: kind === "article" ? "Text článku musí mít 1–8000 znaků." : "Text příspěvku musí mít 1–8000 znaků.",
+    };
+  }
   if (excerptField.length > 180) return { ok: false, error: "Krátký popis může mít nejvýš 180 znaků." };
   if (deckName.length > 120) return { ok: false, error: "Název decku může mít nejvýš 120 znaků." };
 
@@ -54,7 +64,8 @@ export function parsePost(formData: FormData): { ok: true; value: PostInput } | 
       title,
       body,
       excerpt: excerptField || excerptFrom(body),
-      deckName: deckName || null,
+      deckName: kind === "article" ? null : deckName || null,
+      kind,
     },
   };
 }
@@ -101,7 +112,12 @@ export function parseEvent(
   const location = text(formData.get("location"));
 
   if (title.length < 1 || title.length > 160) return { ok: false, error: "Název eventu musí mít 1–160 znaků." };
-  if (!EVENT_TYPES.includes(eventType as EventType)) return { ok: false, error: "Vyber typ eventu." };
+  if (!isEventKind(eventType)) {
+    return {
+      ok: false,
+      error: `Vyber typ eventu (${EVENT_KINDS.join(", ")}).`,
+    };
+  }
   if (location.length > 160) return { ok: false, error: "Místo může mít nejvýš 160 znaků." };
 
   const startsAt = pragueLocalToUtc(startsAtRaw);
@@ -112,7 +128,7 @@ export function parseEvent(
     ok: true,
     value: {
       title,
-      eventType: eventType as EventType,
+      eventType,
       startsAt: startsAt.toISOString(),
       location: location || null,
     },

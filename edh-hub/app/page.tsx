@@ -1,7 +1,8 @@
 import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
+import { feedTopicChip } from "@/lib/brand";
 import { getFeedPosts, type FeedPost } from "@/lib/supabase/queries";
-import { formatRelativePrague } from "@/lib/utils";
+import { cn, formatRelativePrague } from "@/lib/utils";
 
 const samples: FeedPost[] = [
   {
@@ -10,7 +11,9 @@ const samples: FeedPost[] = [
     excerpt: "Rozbor combů, mulligan strategie a proč je deck konzistentní i v roce 2026.",
     body: null,
     deckName: "Kinnan, Bonder Prodigy",
+    kind: "post",
     author: "AetherMaster",
+    authorUsername: "aethermaster",
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   },
   {
@@ -19,27 +22,54 @@ const samples: FeedPost[] = [
     excerpt: "ETB abuse, recursion a top-end bombs. Curve, synergie a budget swapy.",
     body: null,
     deckName: "Henzie",
+    kind: "post",
     author: "Elf_Brewer",
+    authorUsername: "elf_brewer",
     createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "sample-rules",
+    title: "Rule zero bez dramatu",
+    excerpt: "Jak si domluvit power level a tempo stolu, než se zamíchá.",
+    body: null,
+    deckName: null,
+    kind: "post",
+    author: "Kosino",
+    authorUsername: "kosino",
+    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
 export default async function Home() {
   const result = await getFeedPosts();
-  const posts = result.status === "ok" ? result.data : samples;
   const live = result.status === "ok";
+  const posts = live ? result.data : samples;
 
   return (
-    <div className="max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Feed</h1>
-        <p className="mt-1 text-foreground/60">Nejnovější příspěvky z komunity EDH</p>
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">Feed</h1>
+          <p className="mt-1 text-sm text-foreground/55">Nejnovější příspěvky z Commander komunity</p>
+        </div>
+        <Link
+          href="/posts/new"
+          className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-[0_0_20px_-8px] shadow-primary hover:bg-primary/90"
+        >
+          + Nový příspěvek
+        </Link>
       </div>
 
       {result.status === "error" && <DataNotice message={result.message} />}
+      {result.status === "unconfigured" && (
+        <DataNotice message="Supabase ještě není nastavené. Níže je jen náhled feedu." />
+      )}
+      {!live && result.status === "error" ? (
+        <p className="mb-4 text-sm text-foreground/50">Zatím ukazujeme ukázkové příspěvky.</p>
+      ) : null}
 
-      {posts.length === 0 ? (
-        <p className="rounded-xl border border-white/10 bg-card p-5 text-sm text-foreground/70">
+      {live && posts.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-white/15 bg-card/60 p-8 text-center text-sm text-foreground/70">
           Zatím tu nic není.{" "}
           <Link href="/posts/new" className="text-primary hover:underline">
             Napiš první příspěvek
@@ -58,28 +88,50 @@ export default async function Home() {
 }
 
 function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
+  const initial = post.author.slice(0, 1).toUpperCase();
+  const topic = feedTopicChip({ title: post.title, deckName: post.deckName });
+
   return (
-    <article className="rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
-      <div className="mb-3 flex items-center gap-3 text-sm text-foreground/60">
-        <div className="h-8 w-8 rounded-full bg-primary/30" />
-        <span>{post.author}</span>
-        <span>•</span>
-        <span>{formatRelativePrague(post.createdAt)}</span>
+    <article className="animate-fade-rise rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/35">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/30">
+          {initial}
+        </div>
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
+          {live && post.authorUsername !== "hráč" ? (
+            <Link
+              href={`/profile/${post.authorUsername}`}
+              className="truncate font-medium text-foreground hover:text-primary"
+            >
+              {post.author}
+            </Link>
+          ) : (
+            <span className="truncate font-medium text-foreground">{post.author}</span>
+          )}
+          <span className="shrink-0 text-xs text-foreground/40">{formatRelativePrague(post.createdAt)}</span>
+        </div>
       </div>
-      <h2 className="mb-2 text-lg font-semibold">{post.title}</h2>
-      {post.excerpt && <p className="mb-4 text-sm text-foreground/70">{post.excerpt}</p>}
-      <div className="flex items-center justify-between text-xs">
-        {post.deckName ? (
-          <span className="rounded bg-primary/20 px-2 py-1 text-primary">Deck: {post.deckName}</span>
-        ) : (
-          <span />
-        )}
+
+      <h2 className="font-display text-lg font-semibold leading-snug text-foreground">{post.title}</h2>
+      {post.excerpt ? (
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-foreground/65">{post.excerpt}</p>
+      ) : null}
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-medium", topic.className)}>
+            {topic.label}
+          </span>
+          {post.deckName ? (
+            <span className="truncate text-xs text-foreground/45">Deck: {post.deckName}</span>
+          ) : null}
+        </div>
         {live ? (
-          <Link href={`/posts/${post.id}`} className="text-primary hover:underline">
-            Číst více →
+          <Link href={`/posts/${post.id}`} className="text-sm font-medium text-primary hover:underline">
+            Číst více
           </Link>
         ) : (
-          <span className="text-foreground/40">Náhled</span>
+          <span className="text-sm text-foreground/35">Náhled</span>
         )}
       </div>
     </article>

@@ -20,11 +20,13 @@ create table if not exists public.posts (
   excerpt text,
   body text,
   deck_name text,
+  kind text not null default 'post' check (kind in ('post', 'article')),
   created_at timestamptz not null default now()
 );
 
 create index if not exists posts_created_at_idx on public.posts (created_at desc);
 create index if not exists posts_author_id_idx on public.posts (author_id);
+create index if not exists posts_kind_created_at_idx on public.posts (kind, created_at desc);
 
 create table if not exists public.decks (
   id uuid primary key default gen_random_uuid(),
@@ -42,7 +44,7 @@ create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   host_id uuid references public.profiles (id) on delete set null,
   title text not null check (char_length(title) between 1 and 160),
-  event_type text not null check (event_type in ('Competitive', 'Casual', 'Online')),
+  event_type text not null check (event_type in ('cEDH Tournament', 'EDH Tournament', 'Friday Night Magic', 'Casual Pod')),
   starts_at timestamptz not null,
   location text,
   created_at timestamptz not null default now()
