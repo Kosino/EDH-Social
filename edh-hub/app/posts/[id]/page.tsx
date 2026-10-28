@@ -81,16 +81,24 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
         {post.body || post.excerpt || "Příspěvek nemá text."}
       </div>
       {isOwner ? (
-        <form action={deletePost} className="mt-4">
-          <input type="hidden" name="postId" value={post.id} />
-          <input type="hidden" name="kind" value="post" />
-          <button
-            type="submit"
-            className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href={`/posts/${post.id}/edit`}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-foreground/80 hover:bg-white/5"
           >
-            Smazat příspěvek
-          </button>
-        </form>
+            Upravit
+          </Link>
+          <form action={deletePost}>
+            <input type="hidden" name="postId" value={post.id} />
+            <input type="hidden" name="kind" value="post" />
+            <button
+              type="submit"
+              className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+            >
+              Smazat příspěvek
+            </button>
+          </form>
+        </div>
       ) : null}
     </article>
   );

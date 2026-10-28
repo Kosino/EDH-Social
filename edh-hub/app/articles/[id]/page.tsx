@@ -66,16 +66,24 @@ export default async function ArticlePage({ params }: { params: Promise<{ id: st
         {article.body || article.excerpt || "Článek nemá text."}
       </div>
       {isOwner ? (
-        <form action={deletePost} className="mt-4">
-          <input type="hidden" name="postId" value={article.id} />
-          <input type="hidden" name="kind" value="article" />
-          <button
-            type="submit"
-            className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href={`/articles/${article.id}/edit`}
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-foreground/80 hover:bg-white/5"
           >
-            Smazat článek
-          </button>
-        </form>
+            Upravit
+          </Link>
+          <form action={deletePost}>
+            <input type="hidden" name="postId" value={article.id} />
+            <input type="hidden" name="kind" value="article" />
+            <button
+              type="submit"
+              className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+            >
+              Smazat článek
+            </button>
+          </form>
+        </div>
       ) : null}
     </article>
   );

@@ -105,8 +105,9 @@ export function parseDeck(formData: FormData): { ok: true; value: DeckInput } | 
 
 export function parseEvent(
   formData: FormData,
-  now = Date.now()
+  options: { now?: number; allowPast?: boolean } = {}
 ): { ok: true; value: EventInput } | { ok: false; error: string } {
+  const now = options.now ?? Date.now();
   const title = text(formData.get("title"));
   const eventType = text(formData.get("eventType"));
   const startsAtRaw = text(formData.get("startsAt"));
@@ -125,7 +126,9 @@ export function parseEvent(
 
   const startsAt = pragueLocalToUtc(startsAtRaw);
   if (!startsAt) return { ok: false, error: "Zadej datum a čas začátku." };
-  if (startsAt.getTime() < now - 60_000) return { ok: false, error: "Event musí začínat v budoucnosti." };
+  if (!options.allowPast && startsAt.getTime() < now - 60_000) {
+    return { ok: false, error: "Event musí začínat v budoucnosti." };
+  }
 
   return {
     ok: true,

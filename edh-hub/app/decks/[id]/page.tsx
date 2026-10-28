@@ -86,16 +86,24 @@ export default async function DeckDetailPage({ params }: { params: Promise<{ id:
               </span>
             )}
             {isOwner ? (
-              <form action={deleteDeck}>
-                <input type="hidden" name="deckId" value={deck.id} />
-                <input type="hidden" name="username" value={deck.ownerUsername} />
-                <button
-                  type="submit"
-                  className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+              <>
+                <Link
+                  href={`/decks/${deck.id}/edit`}
+                  className="rounded-lg border border-white/15 px-4 py-2 text-sm text-foreground/80 hover:bg-white/5"
                 >
-                  Smazat deck
-                </button>
-              </form>
+                  Upravit
+                </Link>
+                <form action={deleteDeck}>
+                  <input type="hidden" name="deckId" value={deck.id} />
+                  <input type="hidden" name="username" value={deck.ownerUsername} />
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-400/10"
+                  >
+                    Smazat deck
+                  </button>
+                </form>
+              </>
             ) : null}
           </div>
         </div>

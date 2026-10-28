@@ -181,6 +181,125 @@ export async function toggleRsvp(formData: FormData) {
   redirect(back);
 }
 
+export async function updatePost(_prev: FormState, formData: FormData): Promise<FormState> {
+  const kindHint = String(formData.get("kind") ?? "post") === "article" ? "article" : "post";
+  const postId = String(formData.get("postId") ?? "");
+  const returnPath =
+    UUID.test(postId) && kindHint === "article"
+      ? `/articles/${postId}/edit`
+      : UUID.test(postId)
+        ? `/posts/${postId}/edit`
+        : kindHint === "article"
+          ? "/articles"
+          : "/";
+  const auth = await signedInUser(returnPath);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+  if (!UUID.test(postId)) return { error: "Neplatný příspěvek." };
+
+  const parsed = parsePost(formData);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .update({
+      title: parsed.value.title,
+      body: parsed.value.body,
+      excerpt: parsed.value.excerpt,
+      deck_name: parsed.value.deckName,
+      kind: parsed.value.kind,
+    })
+    .eq("id", postId)
+    .eq("author_id", auth.user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("updatePost", error.code, error.message);
+    return { error: dbError(error.message) };
+  }
+  if (!data?.id) return { error: "Příspěvek se nepodařilo upravit (nebo není tvůj)." };
+
+  redirect(parsed.value.kind === "article" ? `/articles/${postId}` : `/posts/${postId}`);
+}
+
+export async function updateDeck(_prev: FormState, formData: FormData): Promise<FormState> {
+  const deckId = String(formData.get("deckId") ?? "");
+  const returnPath = UUID.test(deckId) ? `/decks/${deckId}/edit` : "/decks/new";
+  const auth = await signedInUser(returnPath);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+  if (!UUID.test(deckId)) return { error: "Neplatný deck." };
+
+  const parsed = parseDeck(formData);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("decks")
+    .update({
+      name: parsed.value.name,
+      format: parsed.value.format,
+      commander: parsed.value.commander,
+      moxfield_url: parsed.value.moxfieldUrl,
+    })
+    .eq("id", deckId)
+    .eq("owner_id", auth.user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error("updateDeck", error.code, error.message);
+    return { error: dbError(error.message) };
+  }
+  if (!data?.id) return { error: "Deck se nepodařilo upravit (nebo není tvůj)." };
+
+  redirect(`/decks/${deckId}`);
+}
+
+export async function updateEvent(_prev: FormState, formData: FormData): Promise<FormState> {
+  const eventId = String(formData.get("eventId") ?? "");
+  const returnPath = UUID.test(eventId) ? `/events/${eventId}/edit` : "/events/new";
+  const auth = await signedInUser(returnPath);
+  if (!auth.user) return { error: auth.error ?? "Nejdřív se přihlas." };
+  if (!UUID.test(eventId)) return { error: "Neplatný event." };
+
+  const parsed = parseEvent(formData, { allowPast: true });
+  if (!parsed.ok) return { error: parsed.error };
+
+  const supabase = await createClient();
+  const baseRow = {
+    title: parsed.value.title,
+    event_type: parsed.value.eventType,
+    starts_at: parsed.value.startsAt,
+    location: parsed.value.location,
+  };
+  let update = await supabase
+    .from("events")
+    .update({ ...baseRow, description: parsed.value.description })
+    .eq("id", eventId)
+    .eq("host_id", auth.user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (update.error?.message?.toLowerCase().includes("description")) {
+    update = await supabase
+      .from("events")
+      .update(baseRow)
+      .eq("id", eventId)
+      .eq("host_id", auth.user.id)
+      .select("id")
+      .maybeSingle();
+  }
+
+  if (update.error) {
+    console.error("updateEvent", update.error.code, update.error.message);
+    return { error: dbError(update.error.message) };
+  }
+  if (!update.data?.id) return { error: "Event se nepodařilo upravit (nebo není tvůj)." };
+
+  redirect(`/events/${eventId}`);
+}
+
 export async function deleteDeck(formData: FormData) {
   const user = await getCurrentUser();
   const username = String(formData.get("username") ?? "");
