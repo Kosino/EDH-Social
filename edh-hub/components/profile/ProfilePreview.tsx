@@ -278,7 +278,7 @@ function DeckCard({ deck, tone }: { deck: ProfileDeck; tone: number }) {
       ) : (
         <div className={cn("absolute inset-0 bg-gradient-to-b", TONES[tone] ?? TONES[0])} />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/20" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
       <div className="relative z-10 flex h-full flex-col p-3">
         <span
           className={cn(
@@ -288,14 +288,14 @@ function DeckCard({ deck, tone }: { deck: ProfileDeck; tone: number }) {
         >
           {deck.format}
         </span>
-        <h3 className="mt-auto font-display text-sm font-semibold leading-snug text-white drop-shadow">
+        <h3 className="mt-auto font-display text-sm font-semibold leading-snug text-white drop-shadow-md">
           {deck.name}
         </h3>
-        <p className="mt-1 truncate text-xs text-white/70">{deck.commander}</p>
+        <p className="mt-1 truncate text-xs text-white/80 drop-shadow">{deck.commander}</p>
         {deck.moxfieldUrl ? (
-          <span className="pt-2 text-xs text-primary">Moxfield →</span>
+          <span className="pt-2 text-xs font-medium text-primary drop-shadow">Moxfield →</span>
         ) : (
-          <p className="pt-2 text-xs text-white/35">Bez Moxfield</p>
+          <p className="pt-2 text-xs text-white/45">Bez Moxfield</p>
         )}
       </div>
     </Link>
