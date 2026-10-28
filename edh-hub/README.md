@@ -44,6 +44,14 @@ V Supabase SQL editoru spusť migrace v pořadí:
 Nebo jedním pastem: `supabase/migrations/20261028160000_part2_bundle.sql` (kroky 2–4).
 
 5. `supabase/migrations/20261028170000_profile_avatars.sql` (avatar_key / avatar_url / moxfield_user_url + Storage bucket `avatars`)
+6. `supabase/migrations/20261029120000_taverna_u_kosa.sql` (Taverna: `decks_v2`, `deck_cards`, feature flags)
+
+## Taverna u Kosa (deckbuilder)
+
+- Docs: `architecture/`, `modules/01-core-deck-crud.md`
+- Feature flag: `deckbuilder_core` (tabulka `feature_flags`)
+- Routes: `/decks/new` (flag → Taverna), `/decks/v2/[id]`, `/decks/v2/[id]/edit`
+- Legacy `public.decks` beze změny
 
 ## Supabase Auth URL Configuration
 
