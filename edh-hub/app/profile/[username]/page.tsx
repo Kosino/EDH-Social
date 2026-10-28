@@ -18,7 +18,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   if (rawUsername === "me") {
     const user = await getCurrentUser();
-    if (!user) redirect("/login");
+    // Guests must not be sent to /login from Profile — only via „Přihlásit se“.
+    if (!user) redirect("/");
     if (!user.username) {
       return (
         <div className="max-w-xl">

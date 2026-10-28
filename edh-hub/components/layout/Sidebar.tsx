@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 export default function Sidebar({ user }: { user: SessionUser | null }) {
   const pathname = usePathname();
-  const profileHref = user?.username ? `/profile/${user.username}` : "/profile/me";
+  const profileHref = user?.username ? `/profile/${user.username}` : null;
 
   return (
     <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-card p-6 md:flex">
@@ -30,12 +30,14 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
 
       <nav className="space-y-1">
         <NavItem href="/" icon={<Home size={18} />} label="Feed" active={pathname === "/"} />
-        <NavItem
-          href={profileHref}
-          icon={<User size={18} />}
-          label="Profil"
-          active={pathname.startsWith("/profile")}
-        />
+        {profileHref ? (
+          <NavItem
+            href={profileHref}
+            icon={<User size={18} />}
+            label="Profil"
+            active={pathname.startsWith("/profile")}
+          />
+        ) : null}
         <NavItem
           href="/events"
           icon={<Calendar size={18} />}
@@ -69,7 +71,7 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
       </div>
 
       <div className="mt-auto space-y-3 pt-8">
-        {user ? (
+        {user && profileHref ? (
           <>
             <Link
               href={profileHref}

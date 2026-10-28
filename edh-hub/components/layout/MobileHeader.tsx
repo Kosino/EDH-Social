@@ -20,7 +20,7 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
           </form>
         ) : (
           <Link href="/login" className="text-sm font-medium text-primary">
-            Přihlásit
+            Přihlásit se
           </Link>
         )}
       </div>
@@ -28,8 +28,8 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
         <Link href="/">Feed</Link>
         <Link href="/events">Eventy</Link>
         <Link href="/articles">Články</Link>
-        <Link href={user?.username ? `/profile/${user.username}` : "/profile/me"}>Profil</Link>
-        <Link href="/posts/new">Příspěvek</Link>
+        {user?.username ? <Link href={`/profile/${user.username}`}>Profil</Link> : null}
+        {user ? <Link href="/posts/new">Příspěvek</Link> : null}
       </nav>
     </header>
   );
