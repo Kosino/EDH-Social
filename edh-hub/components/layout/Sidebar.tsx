@@ -29,7 +29,8 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
   const tavernaOpen =
     pathname.startsWith("/taverna") ||
     pathname.startsWith("/decks/new") ||
-    pathname.startsWith("/decks/v2");
+    pathname.startsWith("/decks/v2") ||
+    /^\/decks\/[^/]+\/playtest(?:\/|$)/.test(pathname);
 
   return (
     <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-card p-6 md:flex">
