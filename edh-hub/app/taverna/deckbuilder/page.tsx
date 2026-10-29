@@ -8,7 +8,11 @@ import { getCurrentUser } from "@/lib/supabase/session";
 export const dynamic = "force-dynamic";
 
 export default async function DeckbuilderDashboardPage() {
-  const [user, flagOn] = await Promise.all([getCurrentUser(), isFeatureEnabled("deckbuilder_core")]);
+  const [user, flagOn, playtestOn] = await Promise.all([
+    getCurrentUser(),
+    isFeatureEnabled("deckbuilder_core"),
+    isFeatureEnabled("deckbuilder_playtest"),
+  ]);
 
   const decksResult = user && flagOn ? await listMyDecksV2(user.id) : null;
 
@@ -74,7 +78,7 @@ export default async function DeckbuilderDashboardPage() {
             .
           </p>
         ) : (
-          <DeckListGrid decks={decksResult.data} />
+          <DeckListGrid decks={decksResult.data} playtestEnabled={playtestOn} />
         )
       ) : null}
     </div>

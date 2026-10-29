@@ -5,7 +5,13 @@ import { isSuperuser } from "@/lib/admin";
 import { BRAND_NAME } from "@/lib/brand";
 import type { SessionUser } from "@/lib/supabase/session";
 
-export default function MobileHeader({ user }: { user: SessionUser | null }) {
+export default function MobileHeader({
+  user,
+  playtestEnabled = false,
+}: {
+  user: SessionUser | null;
+  playtestEnabled?: boolean;
+}) {
   const showAdmin = isSuperuser(user?.username);
 
   return (
@@ -34,6 +40,7 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
         <Link href="/articles">Články</Link>
         <Link href="/taverna">Taverna</Link>
         <Link href="/taverna/deckbuilder">Deckbuilder</Link>
+        {playtestEnabled ? <Link href="/taverna/playtest">Playtest</Link> : null}
         {user?.username ? <Link href={`/profile/${user.username}`}>Profil</Link> : null}
         {showAdmin ? <Link href="/admin">Admin</Link> : null}
         {user ? <Link href="/posts/new">Příspěvek</Link> : null}
