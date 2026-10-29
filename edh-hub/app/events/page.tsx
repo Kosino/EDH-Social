@@ -4,8 +4,9 @@ import DataNotice from "@/components/DataNotice";
 import EventKindIcon from "@/components/events/EventKindIcon";
 import MonthCalendar, { type DayMarker } from "@/components/events/MonthCalendar";
 import SearchBar from "@/components/SearchBar";
+import PageHeader from "@/components/ui/PageHeader";
 import { toggleRsvp } from "@/app/create/actions";
-import { eventTypeStyle } from "@/lib/brand";
+import { BRAND_NAME, eventTypeStyle } from "@/lib/brand";
 import { eventsPath, formatDayLabel, pragueDateKey, pragueMonthRange, resolveCalendarQuery } from "@/lib/calendar";
 import { EVENT_KINDS } from "@/lib/events";
 import {
@@ -219,31 +220,30 @@ export default async function EventsPage({
 
   return (
     <div className="max-w-6xl">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold">Kalendář eventů</h1>
-          <p className="mt-1 text-foreground/60">
-            cEDH, EDH turnaje, FNM a casual pody · časy v Europe/Prague
-          </p>
-        </div>
-        {user ? (
-          <Link
-            href="/events/new"
-            className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
-          >
-            + Vytvořit event
-          </Link>
-        ) : (
-          <Link
-            href="/login?next=/events/new"
-            className="shrink-0 rounded-lg border border-white/15 px-4 py-2 text-sm text-foreground/70 hover:bg-white/5"
-          >
-            Přihlas se pro vytvoření
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        kicker={BRAND_NAME}
+        title="Kalendář eventů"
+        description="cEDH, EDH turnaje, FNM a casual pody · časy v Europe/Prague"
+        actions={
+          user ? (
+            <Link
+              href="/events/new"
+              className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
+            >
+              + Vytvořit event
+            </Link>
+          ) : (
+            <Link
+              href="/login?next=/events/new"
+              className="rounded-xl border border-white/15 px-4 py-2 text-sm text-foreground/70 hover:bg-white/5"
+            >
+              Přihlas se pro vytvoření
+            </Link>
+          )
+        }
+      />
 
-      <div className="mb-6">
+      <div className="mb-7">
         <SearchBar
           action="/events"
           defaultValue={q}
@@ -398,7 +398,7 @@ function EventItem({
   const detailHref = live ? `/events/${event.id}` : null;
 
   return (
-    <div className="animate-fade-rise flex items-center gap-3 rounded-xl border border-white/10 bg-card p-4 sm:gap-4">
+    <div className="animate-fade-rise flex items-center gap-3 rounded-2xl border border-white/10 bg-card/90 p-4 shadow-panel transition duration-200 hover:border-primary/35 sm:gap-4">
       <div className="w-14 shrink-0 text-center">
         <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground/45">{block.month}</p>
         <p className="font-display text-2xl font-bold leading-none">{block.day}</p>

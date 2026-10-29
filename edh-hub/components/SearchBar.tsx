@@ -13,7 +13,7 @@ export default function SearchBar({
   preserve?: Record<string, string>;
 }) {
   return (
-    <form action={action} method="get" className="relative w-full max-w-md" role="search">
+    <form action={action} method="get" className="relative w-full max-w-xl" role="search">
       {preserve
         ? Object.entries(preserve).map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
@@ -21,7 +21,7 @@ export default function SearchBar({
         : null}
       <Search
         size={16}
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-foreground/40"
+        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-foreground/40"
         aria-hidden
       />
       <input
@@ -30,7 +30,7 @@ export default function SearchBar({
         defaultValue={defaultValue}
         placeholder={placeholder}
         maxLength={80}
-        className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm outline-none transition placeholder:text-foreground/35 focus:border-primary"
+        className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2.5 pl-10 pr-3 text-sm outline-none transition placeholder:text-foreground/35 focus:border-primary/70 focus:bg-white/[0.06] focus:ring-2 focus:ring-primary/20"
       />
     </form>
   );

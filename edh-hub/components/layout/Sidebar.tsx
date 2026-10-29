@@ -32,15 +32,17 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
     pathname.startsWith("/decks/v2");
 
   return (
-    <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-card p-6 md:flex">
+    <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-card/90 p-5 backdrop-blur-sm md:flex lg:w-[17rem] lg:p-6">
       <div className="mb-8">
-        <Link href="/" className="flex items-center gap-3">
-          <TreeMark className="h-9 w-9 shrink-0" />
+        <Link href="/" className="group flex items-center gap-3">
+          <TreeMark className="h-10 w-10 shrink-0 animate-mark-glow transition duration-300 group-hover:scale-105" />
           <span>
             <span className="block font-display text-xl font-bold tracking-tight text-foreground">
               {BRAND_NAME}
             </span>
-            <span className="mt-0.5 block text-xs text-foreground/50">{BRAND_TAGLINE}</span>
+            <span className="mt-0.5 block text-[11px] leading-snug text-foreground/45">
+              {BRAND_TAGLINE}
+            </span>
           </span>
         </Link>
       </div>
@@ -111,14 +113,14 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
         {user ? (
           <Link
             href="/posts/new"
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-white transition hover:bg-primary/90"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-medium text-white shadow-card-hover transition hover:bg-primary/90"
           >
             <Plus size={16} /> Nový příspěvek
           </Link>
         ) : (
           <Link
             href="/login"
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-white transition hover:bg-primary/90"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-medium text-white shadow-card-hover transition hover:bg-primary/90"
           >
             <LogIn size={16} /> Přihlásit se
           </Link>
@@ -130,10 +132,10 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
           <>
             <Link
               href={profileHref}
-              className="block rounded-xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-primary/40"
+              className="block rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 shadow-panel transition hover:border-primary/40 hover:bg-white/[0.045]"
             >
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-casual text-sm font-semibold text-white ring-2 ring-primary/25">
                   {(user.username ?? "?").slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0">
@@ -145,12 +147,12 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
                   ) : null}
                 </div>
               </div>
-              <p className="mt-2 text-xs text-primary">Zobrazit profil →</p>
+              <p className="mt-2.5 text-xs font-medium text-primary">Zobrazit profil →</p>
             </Link>
             <form action={signOut}>
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 py-2.5 text-sm text-foreground/80 transition hover:bg-white/5"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-2.5 text-sm text-foreground/80 transition hover:bg-white/5"
               >
                 <LogOut size={16} /> Odhlásit
               </button>
@@ -179,14 +181,14 @@ function NavItem({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-3 rounded-lg text-sm transition",
+        "flex items-center gap-3 rounded-xl text-sm transition duration-200",
         compact ? "px-2.5 py-2" : "px-3 py-2.5",
         active
-          ? "bg-primary/20 font-medium text-primary"
-          : "text-foreground/80 hover:bg-white/5 hover:text-foreground"
+          ? "nav-active font-medium text-white"
+          : "text-foreground/75 hover:bg-white/5 hover:text-foreground"
       )}
     >
-      {icon}
+      <span className={cn(active ? "text-white" : "text-foreground/55")}>{icon}</span>
       {label}
     </Link>
   );

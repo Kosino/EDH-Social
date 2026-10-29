@@ -44,17 +44,20 @@ export default function MonthCalendar({
   const cells = calendarCells(month);
 
   return (
-    <div className="mb-6 rounded-2xl border border-white/10 bg-card p-3 sm:p-6" data-testid="event-calendar">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <div
+      className="mb-6 rounded-2xl border border-white/10 bg-card/90 p-3 shadow-panel sm:p-6"
+      data-testid="event-calendar"
+    >
+      <div className="mb-5 flex items-center justify-between gap-3">
         <Link
           href={eventsPath({ month: previous.key })}
           aria-label="Předchozí měsíc"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground/80 hover:bg-white/10"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-foreground/80 transition hover:bg-white/10"
         >
           <ChevronLeft size={18} />
         </Link>
         <div className="text-center">
-          <p className="font-display text-lg font-semibold">{title}</p>
+          <p className="font-display text-lg font-semibold tracking-tight">{title}</p>
           {month.key === todayKey.slice(0, 7) ? (
             <p className="text-xs text-foreground/50">Dnes {formatDayLabel(todayKey)}</p>
           ) : (
@@ -66,7 +69,7 @@ export default function MonthCalendar({
         <Link
           href={eventsPath({ month: next.key })}
           aria-label="Další měsíc"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-foreground/80 hover:bg-white/10"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-foreground/80 transition hover:bg-white/10"
         >
           <ChevronRight size={18} />
         </Link>
@@ -105,15 +108,18 @@ export default function MonthCalendar({
               data-today={today ? "true" : undefined}
               data-selected={selected ? "true" : undefined}
               className={cn(
-                "flex min-h-[5.5rem] flex-col rounded-lg p-1 text-left transition sm:min-h-[7.25rem] sm:p-1.5",
-                selected ? "bg-primary/25 ring-2 ring-inset ring-primary" : "bg-white/5 hover:bg-white/10",
-                today && !selected && "ring-2 ring-inset ring-accent"
+                "flex min-h-[5.5rem] flex-col rounded-xl p-1 text-left transition duration-150 sm:min-h-[7.25rem] sm:p-1.5",
+                selected
+                  ? "bg-primary/20 ring-2 ring-inset ring-primary"
+                  : "bg-white/[0.035] hover:bg-white/[0.07]",
+                today && !selected && "ring-1 ring-inset ring-accent/70"
               )}
             >
               <span
                 className={cn(
-                  "mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                  today && "bg-primary font-semibold text-white"
+                  "mb-1 flex h-7 w-7 items-center justify-center rounded-full text-xs",
+                  selected && "bg-primary font-semibold text-white shadow-[0_0_0_3px_rgba(139,92,246,0.25)]",
+                  today && !selected && "bg-accent/90 font-semibold text-background"
                 )}
               >
                 {cell.day}

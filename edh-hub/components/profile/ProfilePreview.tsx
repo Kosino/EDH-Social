@@ -38,27 +38,33 @@ export function ProfilePreview({
   const showMoxfieldCommanders = Boolean(moxfieldUserUrl) && moxfieldCommanders.length > 0;
   return (
     <div className="max-w-5xl">
-      <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-card">
-        <div className="h-28 bg-gradient-to-r from-primary via-primary/70 to-accent sm:h-32" />
-        <div className="relative px-6 pb-6 pt-0">
-          <div className="-mt-12 mb-4">
+      <div className="mb-8 overflow-hidden rounded-3xl border border-white/10 bg-card/95 shadow-panel">
+        <div className="relative h-32 overflow-hidden sm:h-40">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-[#a78bfa] to-accent" />
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-[radial-gradient(circle_at_20%_40%,rgba(255,255,255,0.18),transparent_45%),radial-gradient(circle_at_85%_30%,rgba(0,0,0,0.18),transparent_40%)]"
+          />
+        </div>
+        <div className="relative px-6 pb-7 pt-0 sm:px-8">
+          <div className="-mt-14 mb-4 sm:-mt-16">
             <UserAvatar
               displayName={displayName}
               avatarKey={avatarKey}
               avatarUrl={avatarUrl}
-              size={96}
-              className="border-4 border-card shadow-[0_0_24px_-6px] shadow-primary"
+              size={112}
+              className="border-4 border-card shadow-[0_0_28px_-4px] shadow-primary"
             />
           </div>
-          <h1 className="font-display text-3xl font-bold">
+          <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
             {displayName}
             {admin ? (
-              <span className="ml-3 align-middle rounded border border-accent/40 bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
+              <span className="ml-3 align-middle rounded-md border border-accent/40 bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
                 Admin
               </span>
             ) : null}
           </h1>
-          <p className="mt-1 text-sm text-foreground/55">@{username}</p>
+          <p className="mt-1.5 text-sm text-foreground/55">@{username}</p>
           <p className="mt-3 max-w-xl whitespace-pre-wrap text-sm leading-relaxed text-foreground/75">
             {bio || "Zatím bez popisu."}
           </p>
@@ -88,7 +94,7 @@ export function ProfilePreview({
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-white/10 bg-card p-5">
+        <section className="rounded-2xl border border-white/10 bg-card/90 p-5 shadow-panel sm:p-6">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <h2 className="font-display text-lg font-semibold">
               {showMoxfieldCommanders ? "Commandři z Moxfieldu" : "Oblíbení commandři"}
@@ -138,13 +144,13 @@ export function ProfilePreview({
           )}
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-card p-5">
+        <section className="rounded-2xl border border-white/10 bg-card/90 p-5 shadow-panel sm:p-6">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="font-display text-lg font-semibold">Decky</h2>
             {isOwner ? (
               <Link
                 href="/decks/new"
-                className="rounded-lg border border-accent px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10"
+                className="rounded-xl border border-accent px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10"
               >
                 + Přidat
               </Link>
@@ -174,13 +180,13 @@ export function ProfilePreview({
         </section>
       </div>
 
-      <div className="flex flex-wrap gap-8 rounded-2xl border border-white/10 bg-card px-6 py-4 text-sm">
+      <div className="flex flex-wrap gap-8 rounded-2xl border border-white/10 bg-card/90 px-6 py-5 text-sm shadow-panel">
         <p className="text-foreground/55">
-          Decky <span className="ml-2 font-display text-lg font-semibold text-foreground">{decks.length}</span>
+          Decky <span className="ml-2 font-display text-xl font-semibold text-foreground">{decks.length}</span>
         </p>
         <p className="text-foreground/55">
           Eventy (RSVP){" "}
-          <span className="ml-2 font-display text-lg font-semibold text-foreground">{eventsJoined}</span>
+          <span className="ml-2 font-display text-xl font-semibold text-foreground">{eventsJoined}</span>
         </p>
       </div>
     </div>

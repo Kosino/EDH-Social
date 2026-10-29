@@ -32,12 +32,12 @@ export default async function RootLayout({
 
   return (
     <html lang="cs" className={`${sans.variable} ${display.variable}`}>
-      <body className="min-h-screen bg-background font-sans text-foreground">
-        <div className="flex min-h-screen">
+      <body className="min-h-screen font-sans text-foreground antialiased">
+        <div className="app-shell flex min-h-screen">
           <Sidebar user={user} />
-          <div className="min-w-0 flex-1">
+          <div className="app-main min-w-0 flex-1">
             <MobileHeader user={user} />
-            <main className="p-6 lg:p-8">{children}</main>
+            <main className="animate-fade-rise p-6 lg:p-8">{children}</main>
           </div>
         </div>
       </body>
