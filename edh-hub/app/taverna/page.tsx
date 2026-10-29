@@ -31,7 +31,7 @@ export default async function TavernaDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <p className="text-xs font-medium uppercase tracking-wider text-accent">Taverna u Kosa</p>
+      <p className="page-kicker text-accent">{BRAND_NAME} · Taverna u Kosa</p>
       <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">Taverna</h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-foreground/60">
         Deckbuilding hub v {BRAND_NAME} — UX ve stylu Moxfieldu: rychlé přidávání karet, velký
@@ -39,15 +39,15 @@ export default async function TavernaDashboardPage() {
         {!deckbuilderOn ? " (deckbuilder_core je zatím vypnutý)" : ""}
       </p>
 
-      <div className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-card/70 p-2">
+      <div className="mt-8 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-card/80 p-2 shadow-panel">
         {links.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             className={cn(
-              "min-w-[10rem] flex-1 rounded-xl px-4 py-3 transition",
+              "min-w-[10rem] flex-1 rounded-xl px-4 py-3 transition duration-200",
               item.primary
-                ? "bg-primary text-white hover:bg-primary/90"
+                ? "bg-primary text-white shadow-card-hover hover:bg-primary/90"
                 : "bg-white/[0.03] text-foreground/90 hover:bg-white/[0.06]"
             )}
           >

@@ -39,7 +39,7 @@ export default function ProfileEditor({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 rounded-lg border border-primary px-3 py-1.5 text-sm text-primary transition hover:bg-primary/10"
+        className="mt-4 rounded-xl border border-primary px-3.5 py-1.5 text-sm text-primary transition hover:bg-primary/10"
       >
         Upravit profil
       </button>

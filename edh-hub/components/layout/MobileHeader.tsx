@@ -9,10 +9,10 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
   const showAdmin = isSuperuser(user?.username);
 
   return (
-    <header className="sticky top-0 z-10 border-b border-white/10 bg-card/95 px-4 py-3 backdrop-blur md:hidden">
+    <header className="sticky top-0 z-10 border-b border-white/10 bg-card/90 px-4 py-3 backdrop-blur-md md:hidden">
       <div className="flex items-center justify-between gap-3">
         <Link href="/" className="flex items-center gap-2 font-display font-bold text-foreground">
-          <TreeMark className="h-7 w-7" />
+          <TreeMark className="h-7 w-7 animate-mark-glow" />
           {BRAND_NAME}
         </Link>
         {user ? (
@@ -27,7 +27,7 @@ export default function MobileHeader({ user }: { user: SessionUser | null }) {
           </Link>
         )}
       </div>
-      <nav className="mt-3 flex flex-wrap gap-4 text-sm text-foreground/70">
+      <nav className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-foreground/70">
         <Link href="/">Domů</Link>
         <Link href="/feed">Feed</Link>
         <Link href="/events">Eventy</Link>

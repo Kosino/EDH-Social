@@ -28,16 +28,16 @@ export default function AuthCard({
   return (
     <div className="mx-auto max-w-md">
       <div className="mb-8 flex items-center gap-3">
-        <TreeMark className="h-9 w-9" />
+        <TreeMark className="h-10 w-10 animate-mark-glow" />
         <div>
           <p className="font-display text-lg font-bold">{BRAND_NAME}</p>
           <p className="text-xs text-foreground/50">{BRAND_TAGLINE}</p>
         </div>
       </div>
-      <h1 className="font-display text-3xl font-bold">{title}</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight">{title}</h1>
       <p className="mt-1 text-foreground/60">{subtitle}</p>
 
-      <div className="mt-8 rounded-2xl border border-white/10 bg-card p-6">
+      <div className="mt-8 rounded-2xl border border-white/10 bg-card/95 p-6 shadow-panel">
         {missing.length > 0 && (
           <p className="mb-4 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-sm text-accent">
             {missing.includes("url")

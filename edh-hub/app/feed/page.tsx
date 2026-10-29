@@ -2,7 +2,8 @@ import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
 import SearchBar from "@/components/SearchBar";
 import UserAvatar from "@/components/profile/UserAvatar";
-import { feedTopicChip } from "@/lib/brand";
+import PageHeader from "@/components/ui/PageHeader";
+import { BRAND_NAME, feedTopicChip } from "@/lib/brand";
 import {
   filterPostsByQuery,
   getFeedPosts,
@@ -74,22 +75,23 @@ export default async function FeedPage({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Feed</h1>
-          <p className="mt-1 text-sm text-foreground/55">Nejnovější příspěvky z Commander komunity</p>
-        </div>
-        {user ? (
-          <Link
-            href="/posts/new"
-            className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-[0_0_20px_-8px] shadow-primary hover:bg-primary/90"
-          >
-            + Nový příspěvek
-          </Link>
-        ) : null}
-      </div>
+      <PageHeader
+        kicker={BRAND_NAME}
+        title="Feed"
+        description="Nejnovější příspěvky z Commander komunity"
+        actions={
+          user ? (
+            <Link
+              href="/posts/new"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white shadow-card-hover transition hover:bg-primary/90"
+            >
+              + Nový příspěvek
+            </Link>
+          ) : null
+        }
+      />
 
-      <div className="mb-6">
+      <div className="mb-7">
         <SearchBar action="/feed" defaultValue={q} placeholder="Hledat příspěvky…" />
         {q ? (
           <p className="mt-2 text-xs text-foreground/50">
@@ -158,7 +160,7 @@ function PostCard({ post, live }: { post: FeedPost; live: boolean }) {
   );
 
   return (
-    <article className="animate-fade-rise rounded-2xl border border-white/10 bg-card p-5 transition hover:border-primary/35">
+    <article className="animate-fade-rise rounded-2xl border border-white/10 bg-card/90 p-5 shadow-panel transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card-hover">
       <div className="mb-4 flex items-center gap-3">
         {profileHref ? (
           <Link href={profileHref} aria-label={`Profil ${post.author}`}>

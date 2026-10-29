@@ -3,18 +3,79 @@
 @tailwind utilities;
 
 :root {
-  --background: #0b0b12;
+  --background: #07070e;
   --foreground: #f5f5f7;
-  --card: #14141f;
+  --card: #12121c;
+  --card-elevated: #181824;
   --primary: #8b5cf6;
+  --primary-soft: rgba(139, 92, 246, 0.18);
   --accent: #eab308;
   --casual: #3b82f6;
+  --border: rgba(255, 255, 255, 0.1);
+  --muted: rgba(245, 245, 247, 0.55);
+  --shell-glow-a: rgba(139, 92, 246, 0.14);
+  --shell-glow-b: rgba(234, 179, 8, 0.07);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Atmospheric shell — navy depth + soft purple/gold washes (mock chrome) */
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 700px at 12% -8%, var(--shell-glow-a), transparent 58%),
+    radial-gradient(900px 520px at 92% 8%, var(--shell-glow-b), transparent 52%),
+    radial-gradient(700px 480px at 70% 100%, rgba(59, 130, 246, 0.05), transparent 55%),
+    var(--background);
+}
+
+.app-shell::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.app-main {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.015) 0%,
+    transparent 120px
+  );
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-2xl border border-white/10 bg-card;
+  }
+
+  .page-kicker {
+    @apply text-xs font-medium uppercase tracking-[0.14em] text-primary;
+  }
+
+  .nav-active {
+    background: linear-gradient(
+      90deg,
+      rgba(139, 92, 246, 0.42) 0%,
+      rgba(139, 92, 246, 0.18) 100%
+    );
+    box-shadow: inset 3px 0 0 0 var(--primary);
+  }
 }
 
 /* Taverna u Kosa — illegal card marker (red top-right corner) */
@@ -29,4 +90,12 @@ body {
   border-width: 0 1.25rem 1.25rem 0;
   border-color: transparent #ef4444 transparent transparent;
   pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-rise,
+  .animate-soft-pulse,
+  .animate-mark-glow {
+    animation: none !important;
+  }
 }

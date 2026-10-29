@@ -26,14 +26,20 @@ export default async function HomeDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <header className="mb-10 max-w-2xl">
-        <p className="text-sm font-medium text-primary">{BRAND_NAME}</p>
-        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight sm:text-5xl">
-          Komunita Commander hráčů
-        </h1>
-        <p className="mt-3 text-base leading-relaxed text-foreground/60">
-          Články, eventy a stoly na jednom místě — od casual podů po cEDH.
-        </p>
+      <header className="relative mb-12 max-w-3xl overflow-hidden rounded-3xl border border-white/10 bg-card/50 px-6 py-8 shadow-panel sm:px-8 sm:py-10">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(720px_280px_at_0%_0%,rgba(139,92,246,0.22),transparent_60%),radial-gradient(520px_220px_at_100%_20%,rgba(234,179,8,0.12),transparent_55%)]"
+        />
+        <div className="relative">
+          <p className="page-kicker">{BRAND_NAME}</p>
+          <h1 className="mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">
+            Komunita Commander hráčů
+          </h1>
+          <p className="mt-3 max-w-xl text-base leading-relaxed text-foreground/60">
+            Články, eventy a stoly na jednom místě — od casual podů po cEDH.
+          </p>
+        </div>
       </header>
 
       {(articlesResult.status === "error" || eventsResult.status === "error") && (
@@ -47,8 +53,11 @@ export default async function HomeDashboard() {
         </div>
       )}
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-12">
-        <section aria-labelledby="dash-articles">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-10">
+        <section
+          aria-labelledby="dash-articles"
+          className="rounded-2xl border border-white/10 bg-card/60 p-5 shadow-panel sm:p-6"
+        >
           <div className="mb-4 flex items-end justify-between gap-3">
             <h2 id="dash-articles" className="font-display text-2xl font-semibold">
               Články
@@ -74,7 +83,10 @@ export default async function HomeDashboard() {
           )}
         </section>
 
-        <section aria-labelledby="dash-events">
+        <section
+          aria-labelledby="dash-events"
+          className="rounded-2xl border border-white/10 bg-card/60 p-5 shadow-panel sm:p-6"
+        >
           <div className="mb-4 flex items-end justify-between gap-3">
             <h2 id="dash-events" className="font-display text-2xl font-semibold">
               Eventy
@@ -103,7 +115,7 @@ export default async function HomeDashboard() {
 
       <section
         aria-labelledby="dash-community"
-        className="mt-14 border-t border-white/10 pt-10"
+        className="mt-10 rounded-2xl border border-white/10 bg-card/40 p-6 sm:p-8"
       >
         <h2 id="dash-community" className="font-display text-2xl font-semibold">
           O komunitě

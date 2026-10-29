@@ -1,5 +1,7 @@
 import Link from "next/link";
 import DataNotice from "@/components/DataNotice";
+import PageHeader from "@/components/ui/PageHeader";
+import { BRAND_NAME } from "@/lib/brand";
 import { getArticles, type FeedPost } from "@/lib/supabase/queries";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { formatRelativePrague } from "@/lib/utils";
@@ -43,20 +45,21 @@ export default async function ArticlesPage() {
 
   return (
     <div className="max-w-4xl">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold">Články</h1>
-          <p className="mt-1 text-foreground/60">Delší texty, primery a návody z komunity</p>
-        </div>
-        {user ? (
-          <Link
-            href="/articles/new"
-            className="shrink-0 rounded-lg border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
-          >
-            + Nový článek
-          </Link>
-        ) : null}
-      </div>
+      <PageHeader
+        kicker={BRAND_NAME}
+        title="Články"
+        description="Delší texty, primery a návody z komunity"
+        actions={
+          user ? (
+            <Link
+              href="/articles/new"
+              className="rounded-xl border border-accent px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
+            >
+              + Nový článek
+            </Link>
+          ) : null
+        }
+      />
 
       {result.status === "error" && <DataNotice message={result.message} />}
       {result.status === "unconfigured" && (
@@ -98,7 +101,7 @@ function ArticleCard({ article, live }: { article: FeedPost; live: boolean }) {
     live && article.authorUsername !== "hráč" ? `/profile/${article.authorUsername}` : null;
 
   return (
-    <article className="animate-fade-rise rounded-xl border border-white/10 bg-card p-5 transition hover:border-primary/40">
+    <article className="animate-fade-rise rounded-2xl border border-white/10 bg-card/90 p-5 shadow-panel transition duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card-hover">
       <div className="mb-3 flex items-center gap-3 text-sm text-foreground/60">
         {profileHref ? (
           <Link
