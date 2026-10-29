@@ -24,9 +24,10 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
   const user = await getCurrentUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(`/decks/v2/${id}/edit`)}`);
 
-  const [importOn, statsOn] = await Promise.all([
+  const [importOn, statsOn, playtestOn] = await Promise.all([
     isFeatureEnabled("deckbuilder_import"),
     isFeatureEnabled("deckbuilder_stats"),
+    isFeatureEnabled("deckbuilder_playtest"),
   ]);
   const result = await getDeckV2(id);
   if (result.status === "error") {
@@ -102,6 +103,7 @@ export default async function DeckV2EditPage({ params }: { params: Promise<{ id:
           legal={report.legal}
           active="edit"
           isOwner
+          playtestEnabled={playtestOn}
         />
       </div>
 

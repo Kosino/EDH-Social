@@ -2,7 +2,7 @@ import Link from "next/link";
 import ColorIdentityPips from "@/components/deckbuilder/ColorIdentityPips";
 import { cn } from "@/lib/utils";
 
-type Tab = "view" | "edit" | "import";
+type Tab = "view" | "edit" | "import" | "playtest";
 
 export default function DeckChrome({
   deckId,
@@ -16,6 +16,7 @@ export default function DeckChrome({
   active,
   isOwner,
   meta,
+  playtestEnabled = false,
 }: {
   deckId: string;
   name: string;
@@ -28,6 +29,7 @@ export default function DeckChrome({
   active: Tab;
   isOwner: boolean;
   meta?: string;
+  playtestEnabled?: boolean;
 }) {
   const tabs: Array<{ id: Tab; href: string; label: string; ownerOnly?: boolean }> = [
     { id: "view", href: `/decks/v2/${deckId}`, label: "Přehled" },
@@ -38,6 +40,9 @@ export default function DeckChrome({
       label: "Import",
       ownerOnly: true,
     },
+    ...(playtestEnabled
+      ? [{ id: "playtest" as const, href: `/decks/${deckId}/playtest`, label: "Playtest" }]
+      : []),
   ];
 
   return (

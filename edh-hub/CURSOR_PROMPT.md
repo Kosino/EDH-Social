@@ -16,7 +16,8 @@ Implementace:
 - Modul 01 — `lib/deckbuilder/*`, `app/decks/actions.ts`, `app/decks/v2/*`
 - Modul 02 — `lib/deckbuilder/import.ts`, `ImportDecklistForm`, `/taverna/deckbuilder/import`
 - Modul 03 — `lib/deckbuilder/stats.ts`, `DeckStatsPanel` (flag `deckbuilder_stats`)
+- Playtest — `PlaytestSandbox`, `/decks/[id]/playtest` (flag `deckbuilder_playtest`)
 
-Migrace: `20261029120000_taverna_u_kosa.sql`, `…130000_enable_deckbuilder_import.sql`, `…140000_enable_deckbuilder_stats.sql`.
+Migrace: `20261029120000_taverna_u_kosa.sql`, `…130000_enable_deckbuilder_import.sql`, `…140000_enable_deckbuilder_stats.sql`, `…150000_enable_deckbuilder_playtest.sql`.
 
 **UX north star:** Moxfield-like — viz `docs/moxfield-ux.md` (toolbar, levý náhled, visual grid). Platí pro stávající i budoucí Taverna UI.
