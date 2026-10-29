@@ -19,6 +19,7 @@ Platí pro existující i budoucí obrazovky.
 - Chrome: taby Přehled / Editor / Import + WUBRG pips.
 - View controls: Visual/Dense grid, Group by Type, Sort Name/CMC.
 - Meta: přejmenovat / popis / public + smazání decku (editor sidebar).
+- Playtest: Moxfield-like zóny (hand / battlefield / library / GY+exile / command), lokální goldfish (`/decks/[id]/playtest`).
 
 ## Co nedělat
 

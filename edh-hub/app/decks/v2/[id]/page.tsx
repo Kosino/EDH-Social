@@ -15,7 +15,11 @@ export const dynamic = "force-dynamic";
 
 export default async function DeckV2DetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [result, statsOn] = await Promise.all([getDeckV2(id), isFeatureEnabled("deckbuilder_stats")]);
+  const [result, statsOn, playtestOn] = await Promise.all([
+    getDeckV2(id),
+    isFeatureEnabled("deckbuilder_stats"),
+    isFeatureEnabled("deckbuilder_playtest"),
+  ]);
 
   if (result.status === "error") {
     return (
@@ -101,8 +105,20 @@ export default async function DeckV2DetailPage({ params }: { params: Promise<{ i
           active="view"
           isOwner={isOwner}
           meta={formatRelativePrague(deck.updatedAt)}
+          playtestEnabled={playtestOn}
         />
       </div>
+
+      {playtestOn ? (
+        <div className="mb-5">
+          <Link
+            href={`/decks/${deck.id}/playtest`}
+            className="inline-flex items-center rounded-lg border border-primary/40 bg-primary/15 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/25"
+          >
+            Playtest
+          </Link>
+        </div>
+      ) : null}
 
       {!report.legal ? (
         <div
