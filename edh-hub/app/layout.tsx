@@ -4,6 +4,7 @@ import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { BRAND_NAME } from "@/lib/brand";
+import { isFeatureEnabled } from "@/lib/deckbuilder/feature-flags";
 import { getCurrentUser } from "@/lib/supabase/session";
 
 const sans = DM_Sans({
@@ -28,15 +29,18 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
+  const [user, playtestEnabled] = await Promise.all([
+    getCurrentUser(),
+    isFeatureEnabled("deckbuilder_playtest"),
+  ]);
 
   return (
     <html lang="cs" className={`${sans.variable} ${display.variable}`}>
       <body className="min-h-screen bg-background font-sans text-foreground">
         <div className="flex min-h-screen">
-          <Sidebar user={user} />
+          <Sidebar user={user} playtestEnabled={playtestEnabled} />
           <div className="min-w-0 flex-1">
-            <MobileHeader user={user} />
+            <MobileHeader user={user} playtestEnabled={playtestEnabled} />
             <main className="p-6 lg:p-8">{children}</main>
           </div>
         </div>

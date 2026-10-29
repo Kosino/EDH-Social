@@ -14,6 +14,7 @@ import {
   Shield,
   Beer,
   Layers,
+  Dices,
 } from "lucide-react";
 import { signOut } from "@/app/auth/actions";
 import TreeMark from "@/components/brand/TreeMark";
@@ -22,15 +23,38 @@ import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import type { SessionUser } from "@/lib/supabase/session";
 import { cn } from "@/lib/utils";
 
-export default function Sidebar({ user }: { user: SessionUser | null }) {
+function deckIdFromPath(pathname: string): string | null {
+  const playtest = pathname.match(/^\/decks\/([^/]+)\/playtest(?:\/|$)/);
+  if (playtest) return playtest[1];
+  const v2 = pathname.match(/^\/decks\/v2\/([^/]+)(?:\/|$)/);
+  if (v2) return v2[1];
+  return null;
+}
+
+export default function Sidebar({
+  user,
+  playtestEnabled = false,
+}: {
+  user: SessionUser | null;
+  playtestEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const profileHref = user?.username ? `/profile/${user.username}` : null;
   const showAdmin = isSuperuser(user?.username);
+  const onPlaytestRoute =
+    pathname === "/taverna/playtest" ||
+    pathname.startsWith("/taverna/playtest/") ||
+    /^\/decks\/[^/]+\/playtest(?:\/|$)/.test(pathname);
   const tavernaOpen =
     pathname.startsWith("/taverna") ||
     pathname.startsWith("/decks/new") ||
     pathname.startsWith("/decks/v2") ||
-    /^\/decks\/[^/]+\/playtest(?:\/|$)/.test(pathname);
+    onPlaytestRoute;
+
+  const contextDeckId = deckIdFromPath(pathname);
+  const playtestHref = contextDeckId
+    ? `/decks/${contextDeckId}/playtest`
+    : "/taverna/playtest";
 
   return (
     <aside className="hidden min-h-screen w-64 flex-col border-r border-white/10 bg-card p-6 md:flex">
@@ -95,6 +119,15 @@ export default function Sidebar({ user }: { user: SessionUser | null }) {
               }
               compact
             />
+            {playtestEnabled ? (
+              <NavItem
+                href={playtestHref}
+                icon={<Dices size={16} />}
+                label="Playtest"
+                active={onPlaytestRoute}
+                compact
+              />
+            ) : null}
           </div>
         ) : null}
 

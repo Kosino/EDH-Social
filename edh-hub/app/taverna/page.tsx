@@ -6,7 +6,10 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function TavernaDashboardPage() {
-  const deckbuilderOn = await isFeatureEnabled("deckbuilder_core");
+  const [deckbuilderOn, playtestOn] = await Promise.all([
+    isFeatureEnabled("deckbuilder_core"),
+    isFeatureEnabled("deckbuilder_playtest"),
+  ]);
 
   const links = [
     {
@@ -15,6 +18,16 @@ export default async function TavernaDashboardPage() {
       hint: "Seznam decků · visual editor",
       primary: true,
     },
+    ...(playtestOn
+      ? [
+          {
+            href: "/taverna/playtest",
+            label: "Playtest",
+            hint: "Goldfish sandbox",
+            primary: false,
+          },
+        ]
+      : []),
     {
       href: "/decks/new",
       label: "Nový deck",

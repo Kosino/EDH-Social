@@ -3,7 +3,13 @@ import { toReadableCardImage } from "@/lib/deckbuilder/card-image";
 import type { DeckV2ListItem } from "@/lib/deckbuilder/queries";
 import { formatRelativePrague } from "@/lib/utils";
 
-export default function DeckListGrid({ decks }: { decks: DeckV2ListItem[] }) {
+export default function DeckListGrid({
+  decks,
+  playtestEnabled = false,
+}: {
+  decks: DeckV2ListItem[];
+  playtestEnabled?: boolean;
+}) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {decks.map((deck) => {
@@ -50,6 +56,14 @@ export default function DeckListGrid({ decks }: { decks: DeckV2ListItem[] }) {
               >
                 Přehled
               </Link>
+              {playtestEnabled ? (
+                <Link
+                  href={`/decks/${deck.id}/playtest`}
+                  className="rounded-md border border-primary/35 bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20"
+                >
+                  Playtest
+                </Link>
+              ) : null}
             </div>
           </li>
         );
