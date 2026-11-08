@@ -1,82 +1,84 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 
-interface Card {
+export type DeckBrowserCard = {
+  id: string;
   name: string;
-  mana_cost?: string;
-  type_line?: string;
-  oracle_text?: string;
-  power?: string;
-  toughness?: string;
-  color_identity?: string[];
-  oracle_id?: string;
-  image_uris?: { normal?: string; small?: string };
-}
+  quantity: number;
+  board: 'main' | 'commander' | 'sideboard';
+  manaCost: string | null;
+  typeLine: string | null;
+  imageUrl: string | null;
+  isBasicLand: boolean;
+  illegal: boolean;
+  reasons?: string[];
+  colorIdentity?: string[];
+  oracleText?: string;
+};
 
-const BASIC_LANDS = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'];
+type SortMode = 'name' | 'cmc';
+type ViewMode = 'grid' | 'dense' | 'list';
 
-function isBasicLand(card: Card): boolean {
-  return BASIC_LANDS.some(land => card.name === land || card.type_line?.includes(`Basic Land — ${land}`));
-}
+const GROUP_ORDER = [
+  'Commander',
+  'Creatures',
+  'Planeswalkers',
+  'Instants',
+  'Sorceries',
+  'Artifacts',
+  'Enchantments',
+  'Lands',
+  'Other',
+  'Sideboard',
+] as const;
 
-function getCardType(card: Card, isCommander: boolean): string {
-  if (isCommander) return 'Commander';
-  const t = card.type_line || '';
+function classifyType(card: DeckBrowserCard): string {
+  if (card.board === 'commander') return 'Commander';
+  if (card.board === 'sideboard') return 'Sideboard';
+  const t = card.typeLine || '';
   if (t.includes('Creature')) return 'Creatures';
+  if (t.includes('Planeswalker')) return 'Planeswalkers';
   if (t.includes('Instant')) return 'Instants';
   if (t.includes('Sorcery')) return 'Sorceries';
   if (t.includes('Artifact')) return 'Artifacts';
   if (t.includes('Enchantment')) return 'Enchantments';
-  if (t.includes('Planeswalker')) return 'Planeswalkers';
   if (t.includes('Land')) return 'Lands';
   return 'Other';
 }
 
-function validateDeck(deck: Card[], commander: Card | null): string[] {
-  const errors: string[] = [];
-  if (!commander) {
-    errors.push('Chybí commander (Legendary Creature).');
-    return errors;
-  }
-  if (deck.length !== 100) {
-    errors.push(`Deck má ${deck.length} karet, musí mít přesně 100.`);
-  }
-  const nameCounts = new Map<string, number>();
-  for (const card of deck) {
-    if (isBasicLand(card)) continue;
-    nameCounts.set(card.name, (nameCounts.get(card.name) || 0) + 1);
-  }
-  for (const [name, count] of nameCounts) {
-    if (count > 1) errors.push(`Singleton: ${name} je ${count}×`);
-  }
-  const cmdIdentity = new Set(commander.color_identity || []);
-  for (const card of deck) {
-    for (const color of card.color_identity || []) {
-      if (!cmdIdentity.has(color)) {
-        errors.push(`Color identity: ${card.name} má ${color}`);
-        break;
-      }
-    }
-  }
-  return errors;
+function cmcFromManaCost(manaCost: string | null): number {
+  if (!manaCost) return 0;
+  const generic = manaCost.match(/\{(\d+)\}/);
+  if (generic) return parseInt(generic[1], 10);
+  return (manaCost.match(/\{[WUBRGC]\}/g) || []).length;
 }
 
-export default function MoxfieldStyleDeckBuilder() {
+export default function MoxfieldStyleDeckBuilder({
+  cards: initialCards = [],
+  onAddCard,
+  onRemoveCard,
+  onSetCommander,
+}: {
+  cards?: DeckBrowserCard[];
+  onAddCard?: (name: string) => void;
+  onRemoveCard?: (id: string) => void;
+  onSetCommander?: (id: string) => void;
+}) {
+  const [cards, setCards] = useState<DeckBrowserCard[]>(initialCards);
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Card[]>([]);
-  const [deck, setDeck] = useState<Card[]>([]);
-  const [commander, setCommander] = useState<Card | null>(null);
+  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [hoveredCard, setHoveredCard] = useState<Card | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; card: Card; index?: number } | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortMode>('name');
+  const [view, setView] = useState<ViewMode>('grid');
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; card: DeckBrowserCard } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
+    const close = () => setContextMenu(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
   }, []);
 
   const searchCards = async () => {
@@ -85,191 +87,219 @@ export default function MoxfieldStyleDeckBuilder() {
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setResults(data.cards || []);
+      setResults(data.cards || data || []);
     } catch (e) {
       console.error(e);
     }
     setLoading(false);
   };
 
-  const addToDeck = (card: Card) => {
-    if (deck.length >= 100) return;
-    const newDeck = [...deck, card];
-    setDeck(newDeck);
-    setErrors(validateDeck(newDeck, commander));
-  };
-
-  const setAsCommander = (card: Card) => {
-    if (!card.type_line?.includes('Legendary Creature')) {
-      alert('Commander musí být Legendary Creature');
-      return;
+  const groups = useMemo(() => {
+    const map = new Map<string, DeckBrowserCard[]>();
+    for (const card of cards) {
+      const key = classifyType(card);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(card);
     }
-    setCommander(card);
-    let newDeck = deck.filter(c => c.oracle_id !== card.oracle_id);
-    newDeck = [card, ...newDeck];
-    setDeck(newDeck);
-    setErrors(validateDeck(newDeck, card));
-  };
+    return GROUP_ORDER.map((key) => {
+      const list = map.get(key) ?? [];
+      const sorted = [...list].sort((a, b) => {
+        if (sort === 'cmc') {
+          const d = cmcFromManaCost(a.manaCost) - cmcFromManaCost(b.manaCost);
+          if (d !== 0) return d;
+        }
+        return a.name.localeCompare(b.name);
+      });
+      return { key, cards: sorted, count: sorted.reduce((s, c) => s + c.quantity, 0) };
+    }).filter((g) => g.cards.length > 0);
+  }, [cards, sort]);
 
-  const removeFromDeck = (index: number) => {
-    const removed = deck[index];
-    const newDeck = deck.filter((_, i) => i !== index);
-    setDeck(newDeck);
-    const newCommander = commander && removed.oracle_id === commander.oracle_id ? null : commander;
-    setCommander(newCommander);
-    setErrors(validateDeck(newDeck, newCommander));
-  };
+  const preview = cards.find((c) => c.id === previewId) ?? cards.find((c) => c.board === 'commander') ?? cards[0];
 
-  const handleContextMenu = (e: React.MouseEvent, card: Card, index?: number) => {
+  const handleContextMenu = (e: React.MouseEvent, card: DeckBrowserCard) => {
     e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, card, index });
+    setContextMenu({ x: e.clientX, y: e.clientY, card });
   };
 
-  const grouped = deck.reduce((acc, card, index) => {
-    const type = getCardType(card, !!(commander && card.oracle_id === commander.oracle_id));
-    if (!acc[type]) acc[type] = [];
-    acc[type].push({ card, index });
-    return acc;
-  }, {} as Record<string, { card: Card; index: number }[]>);
+  const addFromSearch = (card: any) => {
+    const newCard: DeckBrowserCard = {
+      id: card.oracle_id || crypto.randomUUID(),
+      name: card.name,
+      quantity: 1,
+      board: 'main',
+      manaCost: card.mana_cost || null,
+      typeLine: card.type_line || null,
+      imageUrl: card.image_uris?.normal || card.imageUrl || null,
+      isBasicLand: /Basic Land/.test(card.type_line || ''),
+      illegal: false,
+      colorIdentity: card.color_identity,
+      oracleText: card.oracle_text,
+    };
+    setCards((prev) => [...prev, newCard]);
+    onAddCard?.(card.name);
+  };
 
-  const typeOrder = ['Commander', 'Creatures', 'Instants', 'Sorceries', 'Artifacts', 'Enchantments', 'Planeswalkers', 'Lands', 'Other'];
+  const removeCard = (id: string) => {
+    setCards((prev) => prev.filter((c) => c.id !== id));
+    onRemoveCard?.(id);
+  };
 
-  const curve: Record<number, number> = {};
-  deck.forEach(card => {
-    if (isBasicLand(card)) return;
-    const cmc = (card.mana_cost || '').replace(/[^0-9]/g, '').split('').reduce((s, n) => s + parseInt(n || '0'), 0) || 0;
-    curve[cmc] = (curve[cmc] || 0) + 1;
-  });
+  const setCommander = (id: string) => {
+    setCards((prev) =>
+      prev.map((c) => ({
+        ...c,
+        board: c.id === id ? 'commander' : c.board === 'commander' ? 'main' : c.board,
+      }))
+    );
+    onSetCommander?.(id);
+  };
+
+  const gridClass =
+    view === 'dense'
+      ? 'grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-6'
+      : view === 'list'
+      ? 'space-y-1'
+      : 'grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5';
 
   return (
-    <div className="min-h-screen bg-[#0f0f12] text-zinc-100 flex flex-col">
-      <header className="border-b border-zinc-800 bg-[#16161a] px-6 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">MTG Commander Deck Builder</h1>
-        <div className="text-sm text-zinc-400">
-          {deck.length}/100 • {commander ? commander.name : 'No commander'}
+    <div className="min-h-screen bg-[#0f0f12] text-zinc-100">
+      {/* Search bar */}
+      <div className="border-b border-zinc-800 bg-[#16161a] px-4 py-3">
+        <div className="flex gap-2 max-w-2xl">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && searchCards()}
+            placeholder="Search cards..."
+            className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-purple-500"
+          />
+          <button
+            onClick={searchCards}
+            disabled={loading}
+            className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-sm disabled:opacity-50"
+          >
+            {loading ? '...' : 'Search'}
+          </button>
         </div>
-      </header>
-
-      {errors.length > 0 && (
-        <div className="bg-red-950/80 border-b border-red-900 px-6 py-2 text-sm text-red-200">
-          {errors.map((e, i) => <div key={i}>• {e}</div>)}
-        </div>
-      )}
-
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 border-r border-zinc-800 bg-[#16161a] flex flex-col">
-          <div className="p-4 border-b border-zinc-800">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && searchCards()}
-                placeholder="Search cards..."
-                className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-purple-500"
-              />
-              <button
-                onClick={searchCards}
-                disabled={loading}
-                className="bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm disabled:opacity-50"
-              >
-                {loading ? '...' : 'Go'}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {results.map((card) => (
+        {results.length > 0 && (
+          <div className="mt-2 max-h-48 overflow-y-auto border border-zinc-800 rounded bg-zinc-900">
+            {results.slice(0, 10).map((card) => (
               <div
                 key={card.oracle_id}
-                onContextMenu={(e) => handleContextMenu(e, card)}
-                onMouseEnter={() => setHoveredCard(card)}
-                onMouseLeave={() => setHoveredCard(null)}
-                className="flex items-center gap-2 p-2 rounded hover:bg-zinc-800 cursor-pointer text-sm"
+                onClick={() => addFromSearch(card)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  addFromSearch(card);
+                }}
+                className="flex items-center justify-between px-3 py-2 hover:bg-zinc-800 cursor-pointer text-sm border-b border-zinc-800 last:border-0"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="truncate font-medium">{card.name}</div>
-                  <div className="text-xs text-zinc-500 truncate">{card.type_line}</div>
-                </div>
-                <span className="text-xs text-zinc-400">{card.mana_cost}</span>
+                <span>{card.name}</span>
+                <span className="text-zinc-500 text-xs">{card.mana_cost}</span>
               </div>
             ))}
           </div>
-        </aside>
-
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-            {typeOrder.map(type => {
-              const items = grouped[type];
-              if (!items || items.length === 0) return null;
-              return (
-                <section key={type}>
-                  <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-                    {type} ({items.length})
-                  </h2>
-                  <div className="space-y-0.5">
-                    {items.map(({ card, index }) => (
-                      <div
-                        key={index}
-                        onContextMenu={(e) => handleContextMenu(e, card, index)}
-                        onMouseEnter={() => setHoveredCard(card)}
-                        onMouseLeave={() => setHoveredCard(null)}
-                        className="flex items-center justify-between px-3 py-1.5 rounded hover:bg-zinc-900 text-sm group"
-                      >
-                        <span className="flex-1 truncate">{card.name}</span>
-                        <span className="text-zinc-500 text-xs mx-3">{card.mana_cost}</span>
-                        <button
-                          onClick={() => removeFromDeck(index)}
-                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 text-xs"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        </main>
-
-        <aside className="w-72 border-l border-zinc-800 bg-[#16161a] p-4 flex flex-col gap-6">
-          {hoveredCard ? (
-            <div>
-              <div className="aspect-[5/7] bg-zinc-900 rounded overflow-hidden mb-3 border border-zinc-800">
-                {hoveredCard.image_uris?.normal ? (
-                  <img src={hoveredCard.image_uris.normal} alt={hoveredCard.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">No image</div>
-                )}
-              </div>
-              <div className="text-sm font-medium">{hoveredCard.name}</div>
-              <div className="text-xs text-zinc-400 mt-1">{hoveredCard.type_line}</div>
-              {hoveredCard.oracle_text && (
-                <p className="text-xs text-zinc-300 mt-2 leading-relaxed">{hoveredCard.oracle_text}</p>
-              )}
-            </div>
-          ) : (
-            <div className="text-sm text-zinc-500">Hover a card to preview</div>
-          )}
-
-          <div>
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase mb-3">Mana Curve</h3>
-            <div className="flex items-end gap-1 h-24">
-              {[0,1,2,3,4,5,6,7].map(cmc => (
-                <div key={cmc} className="flex-1 flex flex-col items-center">
-                  <div
-                    className="w-full bg-purple-600 rounded-t"
-                    style={{ height: `${Math.min((curve[cmc] || 0) * 12, 80)}px` }}
-                  />
-                  <div className="text-[10px] text-zinc-500 mt-1">{cmc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
+        )}
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-[minmax(240px,300px)_minmax(0,1fr)] p-4">
+        {/* Preview sidebar */}
+        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3">
+            <div className="relative mx-auto aspect-[5/7] w-full max-w-[260px] overflow-hidden rounded-xl bg-zinc-800">
+              {preview?.imageUrl ? (
+                <img src={preview.imageUrl} alt={preview.name} className="h-full w-full object-contain" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-zinc-500">
+                  {preview ? preview.name : 'Hover a card'}
+                </div>
+              )}
+            </div>
+            {preview && (
+              <div className="mt-3 space-y-1 px-1">
+                <p className="font-semibold text-sm">{preview.name}</p>
+                {preview.manaCost && <p className="text-xs text-zinc-400">{preview.manaCost}</p>}
+                {preview.typeLine && <p className="text-xs text-zinc-500">{preview.typeLine}</p>}
+                {preview.oracleText && <p className="text-xs text-zinc-300 mt-2 leading-relaxed">{preview.oracleText.slice(0, 200)}...</p>}
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* Main deck */}
+        <div className="min-w-0 space-y-5">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs">
+            <span className="text-zinc-500">View</span>
+            <select
+              value={view}
+              onChange={(e) => setView(e.target.value as ViewMode)}
+              className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1"
+            >
+              <option value="grid">Visual Grid</option>
+              <option value="dense">Dense Grid</option>
+              <option value="list">List</option>
+            </select>
+            <span className="ml-2 text-zinc-500">Sort</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortMode)}
+              className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1"
+            >
+              <option value="name">Name</option>
+              <option value="cmc">CMC</option>
+            </select>
+            <span className="ml-auto text-zinc-400">{cards.reduce((s, c) => s + c.quantity, 0)} cards</span>
+          </div>
+
+          {groups.map((group) => (
+            <section key={group.key}>
+              <div className="mb-3 flex items-baseline justify-between gap-3 border-b border-zinc-800 pb-2">
+                <h3 className="text-sm font-semibold text-zinc-300">
+                  {group.key} <span className="font-normal text-zinc-500">({group.count})</span>
+                </h3>
+              </div>
+              <ul className={gridClass}>
+                {group.cards.map((card) => (
+                  <li key={card.id}>
+                    <button
+                      type="button"
+                      className={`group relative w-full rounded-xl text-left transition ${previewId === card.id ? 'ring-2 ring-purple-500' : ''}`}
+                      onMouseEnter={() => setPreviewId(card.id)}
+                      onClick={() => setPreviewId(card.id)}
+                      onContextMenu={(e) => handleContextMenu(e, card)}
+                    >
+                      {view === 'list' ? (
+                        <div className="flex items-center justify-between px-3 py-1.5 rounded hover:bg-zinc-900 text-sm">
+                          <span>{card.quantity > 1 ? `${card.quantity}× ` : ''}{card.name}</span>
+                          <span className="text-zinc-500 text-xs">{card.manaCost}</span>
+                        </div>
+                      ) : (
+                        <div className="relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
+                          <div className="aspect-[5/7] w-full bg-zinc-800">
+                            {card.imageUrl ? (
+                              <img src={card.imageUrl} alt={card.name} className="h-full w-full object-cover object-top" />
+                            ) : (
+                              <div className="flex h-full items-end p-2 text-xs">{card.name}</div>
+                            )}
+                            {card.quantity > 1 && (
+                              <span className="absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold">
+                                {card.quantity}×
+                              </span>
+                            )}
+                          </div>
+                          <div className="truncate px-2 py-1.5 text-[11px] text-zinc-400">{card.name}</div>
+                        </div>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
+
+      {/* Context menu */}
       {contextMenu && (
         <div
           ref={menuRef}
@@ -277,37 +307,18 @@ export default function MoxfieldStyleDeckBuilder() {
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          {contextMenu.index === undefined ? (
-            <>
-              <button
-                className="w-full text-left px-3 py-1.5 hover:bg-zinc-800"
-                onClick={() => { addToDeck(contextMenu.card); setContextMenu(null); }}
-              >
-                Add to deck
-              </button>
-              <button
-                className="w-full text-left px-3 py-1.5 hover:bg-zinc-800"
-                onClick={() => { setAsCommander(contextMenu.card); setContextMenu(null); }}
-              >
-                Set as commander
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                className="w-full text-left px-3 py-1.5 hover:bg-zinc-800"
-                onClick={() => { setAsCommander(contextMenu.card); setContextMenu(null); }}
-              >
-                Set as commander
-              </button>
-              <button
-                className="w-full text-left px-3 py-1.5 hover:bg-red-900/50 text-red-300"
-                onClick={() => { removeFromDeck(contextMenu.index!); setContextMenu(null); }}
-              >
-                Remove from deck
-              </button>
-            </>
-          )}
+          <button
+            className="w-full text-left px-3 py-1.5 hover:bg-zinc-800"
+            onClick={() => { setCommander(contextMenu.card.id); setContextMenu(null); }}
+          >
+            Set as commander
+          </button>
+          <button
+            className="w-full text-left px-3 py-1.5 hover:bg-red-900/50 text-red-300"
+            onClick={() => { removeCard(contextMenu.card.id); setContextMenu(null); }}
+          >
+            Remove from deck
+          </button>
         </div>
       )}
     </div>
